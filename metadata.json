@@ -1,0 +1,8 @@
+{
+  "name": "EcoGuardian PWA",
+  "description": "Assistente inteligente de gerenciamento de plantas usando Gemini AI para identificação e alertas de cuidados baseados no clima.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}
