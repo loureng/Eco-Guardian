@@ -1,6 +1,6 @@
 
-import { GoogleGenAI, Type, Schema } from "@google/genai";
-import { Plant, SunTolerance } from "../types";
+import { GoogleGenAI, Type, Schema, Content } from "@google/genai";
+import { Plant, SunTolerance, ChatMessage, UserProfile } from "../types";
 import { PLANT_IDENTIFICATION_PROMPT, PLANT_DETAILS_PROMPT } from "../constants";
 
 const getGeminiClient = () => {
@@ -60,8 +60,9 @@ export const identifyPlant = async (base64Image: string): Promise<Partial<Plant>
     // Clean base64 string if it contains metadata
     const cleanBase64 = base64Image.replace(/^data:image\/(png|jpeg|jpg|webp);base64,/, "");
 
+    // Using Standard Flash for Vision tasks
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash", 
       contents: {
         parts: [
           { inlineData: { mimeType: "image/jpeg", data: cleanBase64 } },
@@ -108,8 +109,9 @@ export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant
     const ai = getGeminiClient();
     const prompt = PLANT_DETAILS_PROMPT.replace("{{NAME}}", name);
 
+    // Using Flash Lite for faster text response as requested
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-flash-lite-latest",
       contents: {
         parts: [{ text: prompt }]
       },
@@ -170,5 +172,59 @@ export const generatePlantImage = async (plantName: string): Promise<string | nu
   } catch (error) {
     console.error("Erro ao gerar imagem da planta:", error);
     return null;
+  }
+};
+
+// --- Chatbot Logic ---
+
+export const sendChatMessage = async (
+  history: ChatMessage[], 
+  newMessage: string, 
+  userProfile: UserProfile | null
+): Promise<{ text: string, groundingChunks?: any[] }> => {
+  try {
+    const ai = getGeminiClient();
+    
+    // Construct System Instruction with Context
+    let systemInstruction = "Você é o EcoGuardian, um especialista amigável em plantas. Responda em Português do Brasil.";
+    
+    if (userProfile) {
+      const plantNames = userProfile.plants.map(p => p.commonName).join(", ");
+      systemInstruction += `\nO usuário vive em: ${userProfile.dwellingType || 'Casa/Apartamento'}.`;
+      systemInstruction += `\nLocalização: ${userProfile.location?.city || 'Desconhecida'}.`;
+      if (plantNames) {
+        systemInstruction += `\nPlantas do usuário: ${plantNames}.`;
+      } else {
+        systemInstruction += `\nO usuário ainda não tem plantas cadastradas.`;
+      }
+      systemInstruction += `\nSe o usuário perguntar "onde comprar" ou lojas, use o Google Maps. Para cuidados gerais ou novidades, use o Google Search.`;
+    }
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3-pro-preview", // Chatbot uses the most capable model
+      contents: [
+        ...history.filter(h => h.role !== 'model').map(h => ({
+           role: 'user',
+           parts: [{ text: h.text }]
+        })),
+        { role: 'user', parts: [{ text: newMessage }] }
+      ],
+      config: {
+        systemInstruction: systemInstruction,
+        tools: [{ googleSearch: {} }, { googleMaps: {} }],
+      }
+    });
+
+    // Extract Grounding Data
+    const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+    
+    return {
+      text: response.text || "Desculpe, não consegui processar sua resposta.",
+      groundingChunks
+    };
+
+  } catch (error) {
+    console.error("Chat error:", error);
+    return { text: "Ocorreu um erro ao conectar com o assistente inteligente." };
   }
 };

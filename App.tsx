@@ -20,6 +20,7 @@ import { ConfirmationModal } from './components/ConfirmationModal';
 import { AchievementPopup } from './components/AchievementPopup';
 import { StatisticsSection } from './components/StatisticsSection';
 import { CalendarModal } from './components/CalendarModal';
+import { Chatbot } from './components/Chatbot';
 import { 
   Plus, Leaf, Camera, RefreshCw, Search, Sprout, Trees, Flower2, Droplets, Trophy, Lock, 
   Menu, X, LogOut, ChevronRight, CalendarDays, Home, Building
@@ -338,6 +339,9 @@ const App: React.FC = () => {
         isOpen={calendarModalOpen} plant={plantToSchedule?.plant || null} nextDate={plantToSchedule?.date || null}
         onClose={() => setCalendarModalOpen(false)}
       />
+
+      {/* Global Chatbot */}
+      {user && <Chatbot user={user} />}
 
       {/* WEB HEADER (Site Navigation) */}
       <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">

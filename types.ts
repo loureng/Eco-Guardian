@@ -79,3 +79,17 @@ export interface Alert {
   message: string;
   plantId?: string;
 }
+
+// Chat Types
+export interface GroundingChunk {
+  web?: { uri: string; title: string };
+  maps?: { uri: string; title: string };
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'model';
+  text: string;
+  isLoading?: boolean;
+  groundingChunks?: GroundingChunk[];
+}
