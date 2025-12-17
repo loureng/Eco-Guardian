@@ -1,38 +1,41 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Plant, WeatherData } from '../types';
 import { calculateSmartWatering, checkPlantHealth } from '../services/plantLogic';
-import { Droplets, CheckCircle2, AlertTriangle, Calendar, CloudRain } from 'lucide-react';
+import { Droplets, CheckCircle2, AlertTriangle, CloudRain } from 'lucide-react';
 
 interface Props {
   plants: Plant[];
   weather: WeatherData | null;
 }
 
-export const DashboardSummary: React.FC<Props> = ({ plants, weather }) => {
+export const DashboardSummary = React.memo<Props>(({ plants, weather }) => {
   if (plants.length === 0) return null;
 
-  // Cálculos rápidos
-  const today = new Date().toDateString();
-  let tasksToday = 0;
-  let healthyPlants = 0;
-  let alertsCount = 0;
+  // Memoize calculations to prevent re-calculation on every render
+  const { tasksToday, healthyPlants, alertsCount } = useMemo(() => {
+    let tasks = 0;
+    let healthy = 0;
+    let alerts = 0;
 
-  plants.forEach(plant => {
-    // Check Tasks
-    const schedule = calculateSmartWatering(plant, weather);
-    if (schedule.daysRemaining <= 0) tasksToday++;
+    plants.forEach(plant => {
+      // Check Tasks
+      const schedule = calculateSmartWatering(plant, weather);
+      if (schedule.daysRemaining <= 0) tasks++;
 
-    // Check Health
-    const alerts = checkPlantHealth(plant, weather);
-    if (alerts.some(a => a.type === 'danger' || a.type === 'warning')) {
-      alertsCount++;
-    } else {
-      healthyPlants++;
-    }
-  });
+      // Check Health
+      const plantAlerts = checkPlantHealth(plant, weather);
+      if (plantAlerts.some(a => a.type === 'danger' || a.type === 'warning')) {
+        alerts++;
+      } else {
+        healthy++;
+      }
+    });
 
-  const nextRain = weather?.forecast.find(f => f.rainChance > 60);
+    return { tasksToday: tasks, healthyPlants: healthy, alertsCount: alerts };
+  }, [plants, weather]);
+
+  const nextRain = useMemo(() => weather?.forecast.find(f => f.rainChance > 60), [weather]);
 
   return (
     <div className="grid grid-cols-2 gap-3 mb-6 animate-[fadeIn_0.3s_ease-out]">
@@ -88,4 +91,4 @@ export const DashboardSummary: React.FC<Props> = ({ plants, weather }) => {
       </div>
     </div>
   );
-};
+});
