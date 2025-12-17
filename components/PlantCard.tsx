@@ -88,12 +88,20 @@ export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, 
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-md transition-shadow group relative">
       {/* Header Image Area - Clickable */}
-      <div className="relative h-40 bg-slate-100 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
-        <img 
-          src={plant.imageUrl || "https://picsum.photos/400/300"} 
-          alt={plant.commonName} 
-          className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
-        />
+      <div className="relative h-40 bg-slate-100 group/image">
+        <button
+          type="button"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="absolute inset-0 w-full h-full p-0 border-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 z-0"
+          aria-expanded={isExpanded}
+          aria-label={isExpanded ? `Recolher detalhes de ${plant.commonName}` : `Expandir detalhes de ${plant.commonName}`}
+        >
+          <img
+            src={plant.imageUrl || "https://picsum.photos/400/300"}
+            alt={plant.commonName}
+            className="w-full h-full object-cover transition-transform duration-700 group-hover/image:scale-105"
+          />
+        </button>
         
         {/* Delete Button */}
         <button 
@@ -103,12 +111,13 @@ export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, 
           }}
           className="absolute top-2 left-2 w-8 h-8 bg-black/20 hover:bg-red-500 backdrop-blur-sm rounded-full text-white flex items-center justify-center transition-colors z-10"
           title="Excluir planta"
+          aria-label={`Excluir ${plant.commonName}`}
         >
           <Trash2 size={14} />
         </button>
 
         {/* Badge de Próxima Ação */}
-        <div className={`absolute bottom-2 right-2 px-3 py-1 rounded-full text-xs font-bold shadow-sm flex items-center gap-1 backdrop-blur-md
+        <div className={`absolute bottom-2 right-2 px-3 py-1 rounded-full text-xs font-bold shadow-sm flex items-center gap-1 backdrop-blur-md z-0 pointer-events-none
           ${isUrgent ? 'bg-white/90 text-emerald-700' : 'bg-black/40 text-white'}`}>
           <CalendarClock size={12} />
           {isToday ? 'Regar Hoje' : schedule.daysRemaining < 0 ? 'Atrasada' : `${schedule.daysRemaining} dias`}
@@ -117,9 +126,12 @@ export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, 
       
       <div className="p-4">
         {/* Title Row - Clickable */}
-        <div 
-          className="flex justify-between items-start mb-1 cursor-pointer select-none"
+        <button
+          type="button"
+          className="w-full flex justify-between items-start mb-1 cursor-pointer select-none text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-lg"
           onClick={() => setIsExpanded(!isExpanded)}
+          aria-expanded={isExpanded}
+          aria-label={isExpanded ? "Recolher detalhes" : "Expandir detalhes"}
         >
           <div>
             <h3 className="font-bold text-slate-900 text-lg leading-tight">{plant.commonName}</h3>
@@ -128,7 +140,7 @@ export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, 
           <div className={`text-slate-400 p-1 hover:bg-slate-50 rounded-full transition-all duration-300 ${isExpanded ? 'rotate-180 bg-slate-50' : ''}`}>
             <ChevronDown size={20} />
           </div>
-        </div>
+        </button>
 
         {/* Daily Review Section (Alerts) */}
         {activeAlerts.length > 0 ? (
