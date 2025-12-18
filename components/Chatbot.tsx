@@ -52,6 +52,7 @@ export const Chatbot: React.FC<Props> = ({ user }) => {
         <button 
           onClick={() => setIsOpen(true)}
           className="fixed bottom-6 right-6 w-14 h-14 bg-emerald-600 text-white rounded-full shadow-xl flex items-center justify-center hover:bg-emerald-700 hover:scale-105 transition-all z-40"
+          aria-label="Abrir assistente virtual EcoGuardian"
         >
           <MessageCircle size={28} />
         </button>
@@ -59,7 +60,11 @@ export const Chatbot: React.FC<Props> = ({ user }) => {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-[90vw] max-w-[360px] h-[500px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col z-50 animate-[slideUp_0.3s_ease-out] overflow-hidden">
+        <div
+          role="dialog"
+          aria-label="Assistente Virtual EcoGuardian"
+          className="fixed bottom-6 right-6 w-[90vw] max-w-[360px] h-[500px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col z-50 animate-[slideUp_0.3s_ease-out] overflow-hidden"
+        >
           
           {/* Header */}
           <div className="bg-emerald-600 p-4 text-white flex justify-between items-center">
@@ -74,7 +79,11 @@ export const Chatbot: React.FC<Props> = ({ user }) => {
                 </p>
               </div>
             </div>
-            <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-1 rounded transition-colors">
+            <button
+              onClick={() => setIsOpen(false)}
+              className="hover:bg-white/20 p-1 rounded transition-colors"
+              aria-label="Fechar chat"
+            >
               <X size={20} />
             </button>
           </div>
@@ -131,12 +140,14 @@ export const Chatbot: React.FC<Props> = ({ user }) => {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 placeholder="Pergunte sobre suas plantas..."
+                aria-label="Digite sua mensagem para o assistente"
                 className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
               />
               <button 
                 onClick={handleSend}
                 disabled={!input.trim() || isTyping}
                 className="bg-emerald-600 text-white p-2 rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                aria-label="Enviar mensagem"
               >
                 <Send size={20} />
               </button>
