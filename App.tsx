@@ -13,18 +13,26 @@ import { Button } from './components/Button';
 import { PlantCard } from './components/PlantCard';
 import { WeatherWidget } from './components/WeatherWidget';
 import { DashboardSummary } from './components/DashboardSummary';
-import { AgendaView } from './components/AgendaView';
-import { PlantForm } from './components/PlantForm';
 import { ErrorNotification } from './components/ErrorNotification';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { AchievementPopup } from './components/AchievementPopup';
-import { StatisticsSection } from './components/StatisticsSection';
 import { CalendarModal } from './components/CalendarModal';
-import { Chatbot } from './components/Chatbot';
 import { 
   Plus, Leaf, Camera, RefreshCw, Search, Sprout, Trees, Flower2, Droplets, Trophy, Lock, 
   Menu, X, LogOut, ChevronRight, CalendarDays, Home, Building
 } from 'lucide-react';
+
+// Lazy load heavy components
+const AgendaView = React.lazy(() => import('./components/AgendaView').then(module => ({ default: module.AgendaView })));
+const PlantForm = React.lazy(() => import('./components/PlantForm').then(module => ({ default: module.PlantForm })));
+const StatisticsSection = React.lazy(() => import('./components/StatisticsSection').then(module => ({ default: module.StatisticsSection })));
+const Chatbot = React.lazy(() => import('./components/Chatbot').then(module => ({ default: module.Chatbot })));
+
+const LoadingFallback = () => (
+  <div className="flex justify-center items-center p-12 w-full h-full min-h-[200px]">
+    <RefreshCw className="w-8 h-8 text-emerald-500 animate-spin" />
+  </div>
+);
 
 const App: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -341,7 +349,11 @@ const App: React.FC = () => {
       />
 
       {/* Global Chatbot */}
-      {user && <Chatbot user={user} />}
+      {user && (
+        <React.Suspense fallback={null}>
+          <Chatbot user={user} />
+        </React.Suspense>
+      )}
 
       {/* WEB HEADER (Site Navigation) */}
       <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">
@@ -507,12 +519,14 @@ const App: React.FC = () => {
 
         {/* Nova View: Agenda */}
         {view === 'agenda' && (
-           <AgendaView 
-             plants={user?.plants || []} 
-             weather={weather}
-             onWater={handleWater}
-             onSchedule={handleScheduleRequest}
-           />
+           <React.Suspense fallback={<LoadingFallback />}>
+             <AgendaView
+               plants={user?.plants || []}
+               weather={weather}
+               onWater={handleWater}
+               onSchedule={handleScheduleRequest}
+             />
+           </React.Suspense>
         )}
 
         {view === 'add-plant' && (
@@ -592,13 +606,15 @@ const App: React.FC = () => {
                      </p>
                    </div>
                 ) : plantFormData ? (
-                   <PlantForm 
-                     initialData={plantFormData}
-                     imageUrl={capturedImage}
-                     onSave={handleSavePlant}
-                     onCancel={resetAddPlant}
-                     isManualEntry={isManualEntry}
-                   />
+                   <React.Suspense fallback={<LoadingFallback />}>
+                     <PlantForm
+                       initialData={plantFormData}
+                       imageUrl={capturedImage}
+                       onSave={handleSavePlant}
+                       onCancel={resetAddPlant}
+                       isManualEntry={isManualEntry}
+                     />
+                   </React.Suspense>
                 ) : null}
               </div>
             )}
@@ -639,7 +655,9 @@ const App: React.FC = () => {
             {user && (
               <div>
                 <h3 className="font-bold text-lg text-slate-800 mb-4 px-1">Estatísticas</h3>
-                <StatisticsSection plants={user.plants} weather={weather} />
+                <React.Suspense fallback={<LoadingFallback />}>
+                  <StatisticsSection plants={user.plants} weather={weather} />
+                </React.Suspense>
               </div>
             )}
 
