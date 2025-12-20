@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { UserProfile, Plant, UserLocation, WeatherData, SunTolerance, Achievement, DwellingType } from './types';
 import { loadUser, saveUser } from './services/storageService';
 import { identifyPlant, getPlantDetailsByName, generatePlantImage } from './services/geminiService';
@@ -100,6 +100,12 @@ const App: React.FC = () => {
       requestNotificationPermission(); 
     }
   }, []);
+
+  // Keep a ref to user for stable callbacks
+  const userRef = useRef(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   // Save user changes
   useEffect(() => {
@@ -211,8 +217,9 @@ const App: React.FC = () => {
     handleManualFallback();
   };
 
-  const handleSavePlant = (data: Partial<Plant>) => {
-    if (!user) return;
+  const handleSavePlant = useCallback((data: Partial<Plant>) => {
+    const currentUser = userRef.current;
+    if (!currentUser) return;
     if (!data.commonName || data.commonName.trim() === "") { triggerError("Nome obrigatório."); return; }
     
     // Check if the form returned a specific image (e.g., user re-took photo in form),
@@ -240,8 +247,8 @@ const App: React.FC = () => {
       environmentTips: data.environmentTips
     };
     
-    const updatedPlants = [finalPlant, ...user.plants];
-    const updatedUser = { ...user, plants: updatedPlants };
+    const updatedPlants = [finalPlant, ...currentUser.plants];
+    const updatedUser = { ...currentUser, plants: updatedPlants };
     
     const unlocked = checkNewAchievements(updatedUser, 'PLANT_ADDED');
     if (unlocked.length > 0) {
@@ -255,28 +262,30 @@ const App: React.FC = () => {
     setIsManualEntry(false);
     setSearchName("");
     setView('dashboard');
-    refreshWeather(user.location, updatedPlants);
-  };
+    refreshWeather(currentUser.location, updatedPlants);
+  }, [capturedImage]); // capturedImage might still be a dependency if not ref'd, but it's less critical for re-renders than user
 
   const handleWater = useCallback((id: string) => {
-    if(!user) return;
+    const currentUser = userRef.current;
+    if(!currentUser) return;
     const now = Date.now();
-    const updatedPlants = user.plants.map(p => p.id === id ? { ...p, lastWatered: now, wateringHistory: [...(p.wateringHistory || []), now] } : p);
-    const updatedUser = { ...user, plants: updatedPlants };
+    const updatedPlants = currentUser.plants.map(p => p.id === id ? { ...p, lastWatered: now, wateringHistory: [...(p.wateringHistory || []), now] } : p);
+    const updatedUser = { ...currentUser, plants: updatedPlants };
     const unlocked = checkNewAchievements(updatedUser, 'WATERED');
     if (unlocked.length > 0) {
       updatedUser.unlockedAchievements = [...(updatedUser.unlockedAchievements || []), ...unlocked.map(a => a.id)];
       setNewAchievement(unlocked[0]);
     }
     setUser(updatedUser);
-  }, [user]);
+  }, []); // Stable callback!
 
   const handleDeleteRequest = useCallback((id: string) => setPlantToDelete(id), []);
   
   const confirmDelete = () => {
-    if (!user || !plantToDelete) return;
-    const updatedPlants = user.plants.filter(p => p.id !== plantToDelete);
-    setUser({ ...user, plants: updatedPlants });
+    const currentUser = userRef.current;
+    if (!currentUser || !plantToDelete) return;
+    const updatedPlants = currentUser.plants.filter(p => p.id !== plantToDelete);
+    setUser({ ...currentUser, plants: updatedPlants });
     setPlantToDelete(null);
   };
 
