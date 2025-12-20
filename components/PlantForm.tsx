@@ -233,6 +233,7 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !isSearching && handleSearch()}
               disabled={isSearching || isAnalyzingImage}
+              maxLength={100}
             />
             <button 
               onClick={handleSearch}
@@ -285,6 +286,7 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
             value={formData.commonName || ''}
             onChange={e => handleChange('commonName', e.target.value)}
             placeholder="ex: Espada de São Jorge"
+            maxLength={50}
           />
         </div>
         
@@ -295,6 +297,7 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
             value={formData.scientificName || ''}
             onChange={e => handleChange('scientificName', e.target.value)}
             placeholder="ex: Sansevieria trifasciata"
+            maxLength={100}
           />
         </div>
 
