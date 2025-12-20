@@ -107,7 +107,13 @@ export const identifyPlant = async (base64Image: string): Promise<Partial<Plant>
 export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant>> => {
   try {
     const ai = getGeminiClient();
-    const prompt = PLANT_DETAILS_PROMPT.replace("{{NAME}}", name);
+    // Security: Sanitize input to prevent Prompt Injection
+    // Remove quotes and limit length to prevent malicious payload construction
+    const sanitizedName = name.replace(/["'{}]/g, "").slice(0, 100).trim();
+
+    if (!sanitizedName) throw new Error("Nome da planta inválido");
+
+    const prompt = PLANT_DETAILS_PROMPT.replace("{{NAME}}", sanitizedName);
 
     // Using Flash Lite for faster text response as requested
     const response = await ai.models.generateContent({
