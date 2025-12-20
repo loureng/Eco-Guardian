@@ -109,7 +109,7 @@ const PlantCardComponent: React.FC<Props> = ({ plant, weather, onWater, onDelete
             e.stopPropagation();
             onDelete(plant.id);
           }}
-          className="absolute top-2 left-2 w-8 h-8 bg-black/20 hover:bg-red-500 backdrop-blur-sm rounded-full text-white flex items-center justify-center transition-colors z-10"
+          className="absolute top-2 left-2 w-8 h-8 bg-white/90 text-slate-600 hover:bg-red-500 hover:text-white shadow-sm backdrop-blur-sm rounded-full flex items-center justify-center transition-colors z-10"
           title="Excluir planta"
           aria-label={`Excluir ${plant.commonName}`}
         >
@@ -118,7 +118,7 @@ const PlantCardComponent: React.FC<Props> = ({ plant, weather, onWater, onDelete
 
         {/* Badge de Próxima Ação */}
         <div className={`absolute bottom-2 right-2 px-3 py-1 rounded-full text-xs font-bold shadow-sm flex items-center gap-1 backdrop-blur-md z-0 pointer-events-none
-          ${isUrgent ? 'bg-white/90 text-emerald-700' : 'bg-black/40 text-white'}`}>
+          ${isUrgent ? 'bg-white/90 text-emerald-700' : 'bg-slate-900/70 text-white'}`}>
           <CalendarClock size={12} />
           {isToday ? 'Regar Hoje' : schedule.daysRemaining < 0 ? 'Atrasada' : `${schedule.daysRemaining} dias`}
         </div>
