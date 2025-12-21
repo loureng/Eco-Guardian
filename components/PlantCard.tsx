@@ -8,6 +8,7 @@ import {
   Wind, Sprout, Layers
 } from 'lucide-react';
 import { checkPlantHealth, calculateSmartWatering } from '../services/plantLogic';
+import { DATE_FORMATTER } from '../services/formatters';
 
 interface Props {
   plant: Plant;
@@ -99,6 +100,8 @@ const PlantCardComponent: React.FC<Props> = ({ plant, weather, onWater, onDelete
           <img
             src={plant.imageUrl || "https://picsum.photos/400/300"}
             alt={plant.commonName}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover transition-transform duration-700 group-hover/image:scale-105"
           />
         </button>
@@ -323,7 +326,7 @@ const PlantCardComponent: React.FC<Props> = ({ plant, weather, onWater, onDelete
            <div className="flex flex-col">
              <span className="font-medium text-slate-700">Próxima Rega</span>
              <span className="flex items-center gap-1">
-               {new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' }).format(schedule.nextDate)}
+               {DATE_FORMATTER.format(schedule.nextDate)}
                
                <button 
                  onClick={(e) => {
