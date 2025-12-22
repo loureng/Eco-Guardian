@@ -22,7 +22,8 @@ const PlantCardComponent: React.FC<Props> = ({ plant, weather, onWater, onDelete
   const [isExpanded, setIsExpanded] = useState(false);
   
   // Real-time Logic Calculation (Daily Review)
-  const activeAlerts = checkPlantHealth(plant, weather);
+  // ⚡ Bolt Optimization: Memoize alerts to prevent recalculation on internal state changes (like expanding the card)
+  const activeAlerts = useMemo(() => checkPlantHealth(plant, weather), [plant, weather]);
   
   // Calculate Smart Schedule based on full meteorology
   const schedule = useMemo(() => calculateSmartWatering(plant, weather), [plant, weather]);
