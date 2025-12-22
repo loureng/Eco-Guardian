@@ -333,8 +333,9 @@ const PlantCardComponent: React.FC<Props> = ({ plant, weather, onWater, onDelete
                    e.stopPropagation();
                    onSchedule(plant, schedule.nextDate);
                  }}
-                 className="ml-1 p-1 hover:bg-emerald-50 text-emerald-600 rounded-md transition-colors"
+                 className="ml-1 p-2 hover:bg-emerald-50 text-emerald-600 rounded-md transition-colors"
                  title="Adicionar ao Calendário"
+                 aria-label="Adicionar rega ao calendário"
                >
                  <CalendarPlus size={14} />
                </button>
