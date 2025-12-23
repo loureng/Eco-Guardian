@@ -53,6 +53,22 @@ const sanitizeArray = (val: unknown): string[] => {
   return [];
 };
 
+/**
+ * Security: Sanitize user input before injecting into LLM context/prompts.
+ * Prevents "Prompt Injection" attacks where user input could override system instructions.
+ * - Removes newlines to prevent structure manipulation
+ * - Removes braces {} to prevent template confusion
+ * - Limits length to prevent context flooding
+ */
+const sanitizeForContext = (text: string | undefined | null): string => {
+  if (!text) return "Desconhecido";
+  return String(text)
+    .replace(/[\r\n]+/g, " ") // Collapse newlines to space
+    .replace(/[{}]/g, "")      // Remove braces
+    .slice(0, 100)             // Enforce length limit
+    .trim();
+};
+
 export const identifyPlant = async (base64Image: string): Promise<Partial<Plant>> => {
   try {
     const ai = getGeminiClient();
@@ -107,11 +123,10 @@ export const identifyPlant = async (base64Image: string): Promise<Partial<Plant>
 export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant>> => {
   try {
     const ai = getGeminiClient();
-    // Security: Sanitize input to prevent Prompt Injection
-    // Remove quotes and limit length to prevent malicious payload construction
-    const sanitizedName = name.replace(/["'{}]/g, "").slice(0, 100).trim();
+    // Security: Use unified sanitizer
+    const sanitizedName = sanitizeForContext(name);
 
-    if (!sanitizedName) throw new Error("Nome da planta inválido");
+    if (!sanitizedName || sanitizedName === "Desconhecido") throw new Error("Nome da planta inválido");
 
     const prompt = PLANT_DETAILS_PROMPT.replace("{{NAME}}", sanitizedName);
 
@@ -158,7 +173,8 @@ export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant
 export const generatePlantImage = async (plantName: string): Promise<string | null> => {
   try {
     const ai = getGeminiClient();
-    const prompt = `A professional, high-quality, photorealistic close-up photo of a ${plantName} plant in a modern pot. Bright natural lighting, soft shadows, blurred living room background. 4k resolution.`;
+    const cleanName = sanitizeForContext(plantName);
+    const prompt = `A professional, high-quality, photorealistic close-up photo of a ${cleanName} plant in a modern pot. Bright natural lighting, soft shadows, blurred living room background. 4k resolution.`;
 
     const response = await ai.models.generateImages({
       model: 'imagen-4.0-generate-001',
@@ -195,10 +211,18 @@ export const sendChatMessage = async (
     let systemInstruction = "Você é o EcoGuardian, um especialista amigável em plantas. Responda em Português do Brasil.";
     
     if (userProfile) {
-      const plantNames = userProfile.plants.map(p => p.commonName).join(", ");
-      systemInstruction += `\nO usuário vive em: ${userProfile.dwellingType || 'Casa/Apartamento'}.`;
-      systemInstruction += `\nLocalização: ${userProfile.location?.city || 'Desconhecida'}.`;
-      if (plantNames) {
+      // Security: Sanitize all user-controlled data before injecting into system prompt
+      const dwelling = sanitizeForContext(userProfile.dwellingType);
+      const city = sanitizeForContext(userProfile.location?.city);
+
+      const plantNames = userProfile.plants
+        .map(p => sanitizeForContext(p.commonName))
+        .join(", ");
+
+      systemInstruction += `\nO usuário vive em: ${dwelling}.`;
+      systemInstruction += `\nLocalização: ${city}.`;
+
+      if (plantNames && plantNames.length > 0) {
         systemInstruction += `\nPlantas do usuário: ${plantNames}.`;
       } else {
         systemInstruction += `\nO usuário ainda não tem plantas cadastradas.`;
