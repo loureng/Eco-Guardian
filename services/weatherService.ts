@@ -80,7 +80,7 @@ const getMockWeather = (location: UserLocation): WeatherData => {
             tempMin: base.temp - Math.floor(Math.random() * 5),
             rainChance: base.rainChance,
             uvIndex: base.uvIndex,
-            condition: base.condition as any
+            condition: base.condition as "Ensolarado" | "Nublado" | "Chuvoso" | "Tempestade"
         });
         }
         return forecast;
@@ -91,7 +91,7 @@ const getMockWeather = (location: UserLocation): WeatherData => {
     return {
         current: {
             ...randomScenario,
-            condition: randomScenario.condition as any
+            condition: randomScenario.condition as "Ensolarado" | "Nublado" | "Chuvoso" | "Tempestade"
         },
         forecast: getNextDays(5),
         city: location.city || "Localização Desconhecida",
@@ -144,7 +144,7 @@ export const fetchLocalWeather = async (location: UserLocation): Promise<Weather
         city: location.city || "Localização Desconhecida",
     };
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Failed to fetch weather data:", error);
     return getMockWeather(location);
   }

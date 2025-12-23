@@ -1,10 +1,10 @@
+import { ChevronDown, BookOpen, Globe, Sparkles, BarChart3 } from 'lucide-react';
 
 import React, { useMemo, useState } from 'react';
 import { Plant, WeatherData } from '../types';
 import { 
   Droplets, Thermometer, Sun, AlertTriangle, Trash2, CalendarClock, 
   TrendingUp, TrendingDown, CheckCircle2, Info, CalendarPlus,
-  ChevronDown, ChevronUp, Tag, BarChart3, Globe, Sparkles, BookOpen,
   Wind, Sprout, Layers
 } from 'lucide-react';
 import { checkPlantHealth, calculateSmartWatering } from '../services/plantLogic';
@@ -50,7 +50,8 @@ const PlantCardComponent: React.FC<Props> = ({ plant, weather, onWater, onDelete
     });
 
     // Add Future Prediction
-    const lastWatered = recentHistory.length > 0 ? recentHistory[recentHistory.length - 1] : Date.now();
+    const now = new Date().getTime();
+    const lastWatered = recentHistory.length > 0 ? recentHistory[recentHistory.length - 1] : now;
     // Calculate days from last watered to scheduled date
     const daysToNext = Math.max(1, Math.ceil((schedule.nextDate.getTime() - lastWatered) / (1000 * 60 * 60 * 24)));
     

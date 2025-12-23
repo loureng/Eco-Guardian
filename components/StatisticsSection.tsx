@@ -1,7 +1,7 @@
+import { BarChart3 } from 'lucide-react';
 
 import React, { useMemo } from 'react';
 import { Plant, WeatherData } from '../types';
-import { BarChart3, PieChart } from 'lucide-react';
 import { calculateSmartWatering } from '../services/plantLogic';
 
 interface Props {

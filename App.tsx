@@ -112,7 +112,7 @@ const App: React.FC = () => {
     if (user) saveUser(user);
   }, [user]);
 
-  const refreshWeather = async (loc: UserLocation | null, plants?: Plant[]) => {
+  const refreshWeather = useCallback(async (loc: UserLocation | null, plants?: Plant[]) => {
     if (!loc) return;
     setWeatherLoading(true);
     try {
@@ -128,7 +128,7 @@ const App: React.FC = () => {
     } finally {
       setWeatherLoading(false);
     }
-  };
+  }, []);
 
   // Navigation Helper
   const navigateTo = (target: 'welcome' | 'dashboard' | 'agenda' | 'add-plant' | 'profile') => {
