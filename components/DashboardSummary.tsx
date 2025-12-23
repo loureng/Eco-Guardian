@@ -10,10 +10,10 @@ interface Props {
 }
 
 export const DashboardSummary = React.memo<Props>(({ plants, weather }) => {
-  if (plants.length === 0) return null;
-
   // Memoize calculations to prevent re-calculation on every render
-  const { tasksToday, healthyPlants, alertsCount } = useMemo(() => {
+  const summary = useMemo(() => {
+    if (plants.length === 0) return null;
+
     let tasks = 0;
     let healthy = 0;
     let alerts = 0;
@@ -36,6 +36,10 @@ export const DashboardSummary = React.memo<Props>(({ plants, weather }) => {
   }, [plants, weather]);
 
   const nextRain = useMemo(() => weather?.forecast.find(f => f.rainChance > 60), [weather]);
+
+  if (plants.length === 0 || !summary) return null;
+
+  const { tasksToday, healthyPlants, alertsCount } = summary;
 
   return (
     <div className="grid grid-cols-2 gap-3 mb-6 animate-[fadeIn_0.3s_ease-out]">

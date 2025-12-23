@@ -1,5 +1,5 @@
+import { GoogleGenAI, Schema, Type } from '@google/genai';
 
-import { GoogleGenAI, Type, Schema, Content } from "@google/genai";
 import { Plant, SunTolerance, ChatMessage, UserProfile } from "../types";
 import { PLANT_IDENTIFICATION_PROMPT, PLANT_DETAILS_PROMPT } from "../constants";
 
@@ -36,19 +36,19 @@ const plantSchema: Schema = {
   required: ["scientificName", "commonName", "wateringFrequencyDays", "sunTolerance", "minTemp", "maxTemp"],
 };
 
-const sanitizeString = (val: any): string => {
+const sanitizeString = (val: unknown): string => {
   if (val === null || val === undefined) return "";
   if (typeof val === 'string') return val.trim();
   if (typeof val === 'number') return String(val);
   return ""; 
 };
 
-const sanitizeNumber = (val: any, defaultVal: number): number => {
+const sanitizeNumber = (val: unknown, defaultVal: number): number => {
   const num = Number(val);
   return isNaN(num) ? defaultVal : num;
 };
 
-const sanitizeArray = (val: any): string[] => {
+const sanitizeArray = (val: unknown): string[] => {
   if (Array.isArray(val)) return val.map(v => sanitizeString(v));
   return [];
 };
@@ -62,7 +62,7 @@ export const identifyPlant = async (base64Image: string): Promise<Partial<Plant>
 
     // Using Standard Flash for Vision tasks
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash", 
+      model: "gemini-2.0-flash",
       contents: {
         parts: [
           { inlineData: { mimeType: "image/jpeg", data: cleanBase64 } },
@@ -117,7 +117,7 @@ export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant
 
     // Using Flash Lite for faster text response as requested
     const response = await ai.models.generateContent({
-      model: "gemini-flash-lite-latest",
+      model: "gemini-2.0-flash-lite",
       contents: {
         parts: [{ text: prompt }]
       },
@@ -187,7 +187,7 @@ export const sendChatMessage = async (
   history: ChatMessage[], 
   newMessage: string, 
   userProfile: UserProfile | null
-): Promise<{ text: string, groundingChunks?: any[] }> => {
+): Promise<{ text: string, groundingChunks?: unknown[] }> => {
   try {
     const ai = getGeminiClient();
     
@@ -207,7 +207,7 @@ export const sendChatMessage = async (
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview", // Chatbot uses the most capable model
+      model: "gemini-2.0-pro-exp", // Chatbot uses the most capable model
       contents: [
         ...history.filter(h => h.role !== 'model').map(h => ({
            role: 'user',

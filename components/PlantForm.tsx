@@ -1,8 +1,8 @@
+import { Edit2, Sprout, Layers, Wind, Loader2, Search, Camera, AlertCircle, X, Check } from 'lucide-react';
 
 import React, { useState, useEffect } from 'react';
 import { Plant, SunTolerance } from '../types';
 import { Button } from './Button';
-import { Edit2, Check, Search, Loader2, AlertCircle, Camera, ImagePlus, X, Wind, Layers, Sprout } from 'lucide-react';
 import { getPlantDetailsByName, identifyPlant } from '../services/geminiService';
 
 interface Props {
@@ -53,7 +53,7 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
     }
   }, [initialData, imageUrl, isManualEntry]);
 
-  const handleChange = (field: keyof Plant, value: any) => {
+  const handleChange = (field: keyof Plant, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
