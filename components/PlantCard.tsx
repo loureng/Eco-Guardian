@@ -18,6 +18,23 @@ interface Props {
   onSchedule: (plant: Plant, date: Date) => void;
 }
 
+const getAlertStyle = (type: string) => {
+  switch(type) {
+    case 'danger': return 'bg-red-50 text-red-700 border-red-100';
+    case 'warning': return 'bg-amber-50 text-amber-700 border-amber-100';
+    case 'success': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+    default: return 'bg-blue-50 text-blue-700 border-blue-100';
+  }
+};
+
+const getAlertIcon = (type: string) => {
+  switch(type) {
+    case 'danger': return <AlertTriangle size={14} />;
+    case 'success': return <CheckCircle2 size={14} />;
+    default: return <Info size={14} />;
+  }
+};
+
 const PlantCardComponent: React.FC<Props> = ({ plant, weather, onWater, onDelete, onSchedule }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
@@ -70,23 +87,6 @@ const PlantCardComponent: React.FC<Props> = ({ plant, weather, onWater, onDelete
     plant.wateringFrequencyDays * 1.5,
     10 
   );
-
-  const getAlertStyle = (type: string) => {
-    switch(type) {
-      case 'danger': return 'bg-red-50 text-red-700 border-red-100';
-      case 'warning': return 'bg-amber-50 text-amber-700 border-amber-100';
-      case 'success': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-      default: return 'bg-blue-50 text-blue-700 border-blue-100';
-    }
-  };
-
-  const getAlertIcon = (type: string) => {
-    switch(type) {
-      case 'danger': return <AlertTriangle size={14} />;
-      case 'success': return <CheckCircle2 size={14} />;
-      default: return <Info size={14} />;
-    }
-  };
 
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-md transition-shadow group relative">
