@@ -90,36 +90,40 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Preview imediato
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64 = reader.result as string;
-      setLocalImage(base64); // Atualiza preview
-      setIsAnalyzingImage(true);
-      setSearchError(null);
+    setIsAnalyzingImage(true);
+    setSearchError(null);
 
-      try {
-        // Chama Gemini Vision API
-        const result = await identifyPlant(base64);
-        setFormData(prev => ({
-          ...prev,
-          ...result
-        }));
-        
-        // Update custom category state based on result
-        if (result.category && !CATEGORIES.includes(result.category)) {
-            setIsCustomCategory(true);
-        } else {
-            setIsCustomCategory(false);
-        }
-      } catch (error) {
-        console.error("Erro ao identificar imagem no form:", error);
-        setSearchError("Não conseguimos identificar a planta pela foto. Tente buscar pelo nome.");
-      } finally {
-        setIsAnalyzingImage(false);
+    try {
+      // Security & Performance: Resize and compress image
+      // Prevents DoS (storage quota exceeded) and reduces payload size
+      const { processImage } = await import('../services/imageService');
+      const base64 = await processImage(file);
+
+      setLocalImage(base64);
+
+      // Chama Gemini Vision API
+      const result = await identifyPlant(base64);
+      setFormData(prev => ({
+        ...prev,
+        ...result
+      }));
+
+      // Update custom category state based on result
+      if (result.category && !CATEGORIES.includes(result.category)) {
+          setIsCustomCategory(true);
+      } else {
+          setIsCustomCategory(false);
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Erro ao processar imagem:", error);
+      if (error instanceof Error) {
+        setSearchError(error.message);
+      } else {
+        setSearchError("Não conseguimos processar essa imagem. Tente outra.");
+      }
+    } finally {
+      setIsAnalyzingImage(false);
+    }
   };
 
   const handleSave = () => {
