@@ -122,12 +122,14 @@ export const checkPlantHealth = (plant: Plant, weather: WeatherData | null): Ale
   const current = weather.current;
   const tomorrow = weather.forecast[0];
 
-  const isSucculent = plant.category?.toLowerCase().includes('suculenta') || 
-                      plant.category?.toLowerCase().includes('cacto');
+  // ⚡ Bolt Optimization: Cache lowercased category to avoid repeated allocations
+  const categoryLower = plant.category?.toLowerCase() || '';
+  const isSucculent = categoryLower.includes('suculenta') ||
+                      categoryLower.includes('cacto');
   
-  const isTropical = plant.category?.toLowerCase().includes('tropical') || 
-                     plant.category?.toLowerCase().includes('samambaia') ||
-                     plant.category?.toLowerCase().includes('folhagem');
+  const isTropical = categoryLower.includes('tropical') ||
+                     categoryLower.includes('samambaia') ||
+                     categoryLower.includes('folhagem');
 
   // --- 1. Gestão de Água e Chuva ---
   if (current.rainChance > 80 && isSucculent) {
