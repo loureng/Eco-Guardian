@@ -289,9 +289,15 @@ const PlantCardComponent: React.FC<Props> = ({ plant, weather, onWater, onDelete
                          const isFuture = item.type === 'future';
                          
                          return (
-                           <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-1 group relative">
+                           <div
+                             key={i}
+                             tabIndex={0}
+                             role="img"
+                             aria-label={`${isFuture ? 'Previsão para' : 'Regado em'} ${DATE_FORMATTER.format(item.date)}. Intervalo de ${item.days} dias.`}
+                             className="flex-1 flex flex-col items-center justify-end h-full gap-1 group relative focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-sm cursor-help"
+                           >
                               {/* Floating Tooltip */}
-                              <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 bg-slate-800 text-white text-[10px] font-bold py-1 px-2 rounded shadow-lg z-20 whitespace-nowrap pointer-events-none">
+                              <div className="absolute -top-8 opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 group-focus:translate-y-0 bg-slate-800 text-white text-[10px] font-bold py-1 px-2 rounded shadow-lg z-20 whitespace-nowrap pointer-events-none">
                                 {item.days} dias
                                 <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
                               </div>
