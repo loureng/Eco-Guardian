@@ -1,7 +1,7 @@
 
 import React, { useMemo } from 'react';
 import { Plant, WeatherData } from '../types';
-import { calculateSmartWatering, checkPlantHealth } from '../services/plantLogic';
+import { calculateSmartWatering, checkPlantHealth, analyzeWeatherFactors } from '../services/plantLogic';
 import { Droplets, CheckCircle2, AlertTriangle, CloudRain } from 'lucide-react';
 
 interface Props {
@@ -18,9 +18,13 @@ export const DashboardSummary = React.memo<Props>(({ plants, weather }) => {
     let healthy = 0;
     let alerts = 0;
 
+    // ⚡ Bolt Optimization: Pre-calculate weather factors once instead of for every plant
+    const weatherFactors = weather ? analyzeWeatherFactors(weather) : undefined;
+
     plants.forEach(plant => {
       // Check Tasks
-      const schedule = calculateSmartWatering(plant, weather);
+      // Pass the pre-calculated weather factors to avoid redundant weather analysis loops
+      const schedule = calculateSmartWatering(plant, weather, weatherFactors);
       if (schedule.daysRemaining <= 0) tasks++;
 
       // Check Health
