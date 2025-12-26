@@ -3,10 +3,17 @@ import { GoogleGenAI, Schema, Type } from '@google/genai';
 import { Plant, SunTolerance, ChatMessage, UserProfile } from "../types";
 import { PLANT_IDENTIFICATION_PROMPT, PLANT_DETAILS_PROMPT } from "../constants";
 
+let geminiClientInstance: GoogleGenAI | null = null;
+
 const getGeminiClient = () => {
+  if (geminiClientInstance) return geminiClientInstance;
+
   const apiKey = process.env.API_KEY;
   if (!apiKey) throw new Error("Chave de API não encontrada");
-  return new GoogleGenAI({ apiKey });
+
+  // ⚡ Bolt Optimization: Singleton pattern for API client
+  geminiClientInstance = new GoogleGenAI({ apiKey });
+  return geminiClientInstance;
 };
 
 const plantSchema: Schema = {
