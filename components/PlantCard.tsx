@@ -2,6 +2,7 @@ import { ChevronDown, BookOpen, Globe, Sparkles, BarChart3 } from 'lucide-react'
 
 import React, { useMemo, useState } from 'react';
 import { Plant, WeatherData } from '../types';
+import { WeatherFactors } from '../services/plantLogic';
 import { 
   Droplets, Thermometer, Sun, AlertTriangle, Trash2, CalendarClock, 
   TrendingUp, TrendingDown, CheckCircle2, Info, CalendarPlus,
@@ -13,12 +14,13 @@ import { DATE_FORMATTER } from '../services/formatters';
 interface Props {
   plant: Plant;
   weather: WeatherData | null;
+  weatherFactors?: WeatherFactors;
   onWater: (id: string) => void;
   onDelete: (id: string) => void;
   onSchedule: (plant: Plant, date: Date) => void;
 }
 
-const PlantCardComponent: React.FC<Props> = ({ plant, weather, onWater, onDelete, onSchedule }) => {
+const PlantCardComponent: React.FC<Props> = ({ plant, weather, weatherFactors, onWater, onDelete, onSchedule }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
   // Real-time Logic Calculation (Daily Review)
@@ -26,7 +28,7 @@ const PlantCardComponent: React.FC<Props> = ({ plant, weather, onWater, onDelete
   const activeAlerts = useMemo(() => checkPlantHealth(plant, weather), [plant, weather]);
   
   // Calculate Smart Schedule based on full meteorology
-  const schedule = useMemo(() => calculateSmartWatering(plant, weather), [plant, weather]);
+  const schedule = useMemo(() => calculateSmartWatering(plant, weather, weatherFactors), [plant, weather, weatherFactors]);
 
   const isUrgent = schedule.daysRemaining <= 0;
   const isToday = schedule.daysRemaining === 0;

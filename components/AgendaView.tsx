@@ -33,7 +33,7 @@ export const AgendaView: React.FC<Props> = ({ plants, weather, onWater, onSchedu
     };
 
     return groups;
-  }, [plants, weather]);
+  }, [plants, weather, weatherFactors]);
 
   if (plants.length === 0) {
     return (
