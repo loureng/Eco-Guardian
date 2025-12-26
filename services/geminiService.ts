@@ -3,10 +3,17 @@ import { GoogleGenAI, Schema, Type } from '@google/genai';
 import { Plant, SunTolerance, ChatMessage, UserProfile } from "../types";
 import { PLANT_IDENTIFICATION_PROMPT, PLANT_DETAILS_PROMPT } from "../constants";
 
+let geminiClientInstance: GoogleGenAI | null = null;
+
 const getGeminiClient = () => {
+  if (geminiClientInstance) return geminiClientInstance;
+
   const apiKey = process.env.API_KEY;
   if (!apiKey) throw new Error("Chave de API não encontrada");
-  return new GoogleGenAI({ apiKey });
+
+  // ⚡ Bolt Optimization: Singleton pattern for API client
+  geminiClientInstance = new GoogleGenAI({ apiKey });
+  return geminiClientInstance;
 };
 
 const plantSchema: Schema = {
@@ -51,6 +58,16 @@ const sanitizeNumber = (val: unknown, defaultVal: number): number => {
 const sanitizeArray = (val: unknown): string[] => {
   if (Array.isArray(val)) return val.map(v => sanitizeString(v));
   return [];
+};
+
+// Security: Sanitize input to prevent Prompt Injection
+export const sanitizeForPrompt = (val: string | undefined | null, maxLength = 100): string => {
+  if (!val) return "";
+  // Remove quotes, braces, and newlines to prevent injection
+  return val.replace(/["'{}]/g, "")
+            .replace(/[\r\n]+/g, " ") // Replace newlines with space
+            .slice(0, maxLength)
+            .trim();
 };
 
 export const identifyPlant = async (base64Image: string): Promise<Partial<Plant>> => {
@@ -108,10 +125,9 @@ export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant
   try {
     const ai = getGeminiClient();
     // Security: Sanitize input to prevent Prompt Injection
-    // Remove quotes and limit length to prevent malicious payload construction
-    const sanitizedName = name.replace(/["'{}]/g, "").slice(0, 100).trim();
+    const sanitizedName = sanitizeForPrompt(name);
 
-    if (!sanitizedName) throw new Error("Nome da planta inválido");
+    if (!sanitizedName || sanitizedName === "Desconhecido") throw new Error("Nome da planta inválido");
 
     const prompt = PLANT_DETAILS_PROMPT.replace("{{NAME}}", sanitizedName);
 
@@ -158,7 +174,8 @@ export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant
 export const generatePlantImage = async (plantName: string): Promise<string | null> => {
   try {
     const ai = getGeminiClient();
-    const prompt = `A professional, high-quality, photorealistic close-up photo of a ${plantName} plant in a modern pot. Bright natural lighting, soft shadows, blurred living room background. 4k resolution.`;
+    const cleanName = sanitizeForContext(plantName);
+    const prompt = `A professional, high-quality, photorealistic close-up photo of a ${cleanName} plant in a modern pot. Bright natural lighting, soft shadows, blurred living room background. 4k resolution.`;
 
     const response = await ai.models.generateImages({
       model: 'imagen-4.0-generate-001',
@@ -195,9 +212,15 @@ export const sendChatMessage = async (
     let systemInstruction = "Você é o EcoGuardian, um especialista amigável em plantas. Responda em Português do Brasil.";
     
     if (userProfile) {
-      const plantNames = userProfile.plants.map(p => p.commonName).join(", ");
-      systemInstruction += `\nO usuário vive em: ${userProfile.dwellingType || 'Casa/Apartamento'}.`;
-      systemInstruction += `\nLocalização: ${userProfile.location?.city || 'Desconhecida'}.`;
+      const plantNames = userProfile.plants
+        .map(p => sanitizeForPrompt(p.commonName, 50))
+        .join(", ");
+
+      const dwelling = sanitizeForPrompt(userProfile.dwellingType, 20) || 'Casa/Apartamento';
+      const city = sanitizeForPrompt(userProfile.location?.city, 50) || 'Desconhecida';
+
+      systemInstruction += `\nO usuário vive em: ${dwelling}.`;
+      systemInstruction += `\nLocalização: ${city}.`;
       if (plantNames) {
         systemInstruction += `\nPlantas do usuário: ${plantNames}.`;
       } else {

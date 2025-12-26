@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UserProfile, ChatMessage } from '../types';
 import { sendChatMessage } from '../services/geminiService';
+import { isSafeUrl } from '../services/security';
 import { MessageCircle, X, Send, MapPin, Globe, Loader2, Bot } from 'lucide-react';
 
 interface Props {
@@ -16,16 +17,6 @@ export const Chatbot: React.FC<Props> = ({ user }) => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  // Security: Helper to sanitize URLs (Defense in Depth)
-  const isSafeUrl = (url: string) => {
-    try {
-      const parsed = new URL(url);
-      return ['http:', 'https:'].includes(parsed.protocol);
-    } catch {
-      return false;
-    }
-  };
 
   useEffect(() => {
     if (scrollRef.current) {

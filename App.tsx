@@ -82,6 +82,11 @@ const App: React.FC = () => {
     }
   };
 
+  // ⚡ Bolt Optimization: Calculate weather factors once for all plants
+  const weatherFactors = useMemo(() =>
+    weather ? analyzeWeatherFactors(weather) : undefined
+  , [weather]);
+
   // Initialize App
   useEffect(() => {
     const storedUser = loadUser();
@@ -474,7 +479,7 @@ const App: React.FC = () => {
             <WeatherWidget weather={weather} isLoading={weatherLoading} />
             
             {user && (
-              <DashboardSummary plants={user.plants} weather={weather} />
+              <DashboardSummary plants={user.plants} weather={weather} weatherFactors={weatherFactors} />
             )}
 
             <div>
@@ -503,7 +508,8 @@ const App: React.FC = () => {
                     <PlantCard 
                       key={plant.id} 
                       plant={plant} 
-                      weather={weather} 
+                      weather={weather}
+                      weatherFactors={weatherFactors}
                       onWater={handleWater} 
                       onDelete={handleDeleteRequest}
                       onSchedule={handleScheduleRequest}
@@ -532,6 +538,7 @@ const App: React.FC = () => {
              <AgendaView
                plants={user?.plants || []}
                weather={weather}
+               weatherFactors={weatherFactors}
                onWater={handleWater}
                onSchedule={handleScheduleRequest}
              />
@@ -665,7 +672,7 @@ const App: React.FC = () => {
               <div>
                 <h3 className="font-bold text-lg text-slate-800 mb-4 px-1">Estatísticas</h3>
                 <React.Suspense fallback={<LoadingFallback />}>
-                  <StatisticsSection plants={user.plants} weather={weather} />
+                  <StatisticsSection plants={user.plants} weather={weather} weatherFactors={weatherFactors} />
                 </React.Suspense>
               </div>
             )}
