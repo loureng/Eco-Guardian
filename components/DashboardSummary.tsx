@@ -1,8 +1,10 @@
 
 import React, { useMemo } from 'react';
 import { Plant, WeatherData } from '../types';
-import { calculateSmartWatering, checkPlantHealth } from '../services/plantLogic';
+import { calculateSmartWatering, checkPlantHealth, analyzeWeatherFactors } from '../services/plantLogic';
 import { Droplets, CheckCircle2, AlertTriangle, CloudRain } from 'lucide-react';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import type { WeatherFactors } from '../services/plantLogic';
 
 interface Props {
   plants: Plant[];
@@ -18,9 +20,14 @@ export const DashboardSummary = React.memo<Props>(({ plants, weather }) => {
     let healthy = 0;
     let alerts = 0;
 
+    // ⚡ Bolt Optimization: Pre-calculate weather factors once instead of for every plant
+    // Use passed factors if available, otherwise calculate locally
+    const weatherFactors = propWeatherFactors || (weather ? analyzeWeatherFactors(weather) : undefined);
+
     plants.forEach(plant => {
       // Check Tasks
-      const schedule = calculateSmartWatering(plant, weather);
+      // Pass the pre-calculated weather factors to avoid redundant weather analysis loops
+      const schedule = calculateSmartWatering(plant, weather, weatherFactors);
       if (schedule.daysRemaining <= 0) tasks++;
 
       // Check Health
@@ -33,7 +40,7 @@ export const DashboardSummary = React.memo<Props>(({ plants, weather }) => {
     });
 
     return { tasksToday: tasks, healthyPlants: healthy, alertsCount: alerts };
-  }, [plants, weather]);
+  }, [plants, weather, propWeatherFactors]);
 
   const nextRain = useMemo(() => weather?.forecast.find(f => f.rainChance > 60), [weather]);
 
