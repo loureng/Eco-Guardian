@@ -3,10 +3,17 @@ import { GoogleGenAI, Schema, Type } from '@google/genai';
 import { Plant, SunTolerance, ChatMessage, UserProfile } from "../types";
 import { PLANT_IDENTIFICATION_PROMPT, PLANT_DETAILS_PROMPT } from "../constants";
 
+let geminiClientInstance: GoogleGenAI | null = null;
+
 const getGeminiClient = () => {
+  if (geminiClientInstance) return geminiClientInstance;
+
   const apiKey = process.env.API_KEY;
   if (!apiKey) throw new Error("Chave de API não encontrada");
-  return new GoogleGenAI({ apiKey });
+
+  // ⚡ Bolt Optimization: Singleton pattern for API client
+  geminiClientInstance = new GoogleGenAI({ apiKey });
+  return geminiClientInstance;
 };
 
 const plantSchema: Schema = {
@@ -53,20 +60,14 @@ const sanitizeArray = (val: unknown): string[] => {
   return [];
 };
 
-/**
- * Security: Sanitize user input before injecting into LLM context/prompts.
- * Prevents "Prompt Injection" attacks where user input could override system instructions.
- * - Removes newlines to prevent structure manipulation
- * - Removes braces {} to prevent template confusion
- * - Limits length to prevent context flooding
- */
-const sanitizeForContext = (text: string | undefined | null): string => {
-  if (!text) return "Desconhecido";
-  return String(text)
-    .replace(/[\r\n]+/g, " ") // Collapse newlines to space
-    .replace(/[{}]/g, "")      // Remove braces
-    .slice(0, 100)             // Enforce length limit
-    .trim();
+// Security: Sanitize input to prevent Prompt Injection
+export const sanitizeForPrompt = (val: string | undefined | null, maxLength = 100): string => {
+  if (!val) return "";
+  // Remove quotes, braces, and newlines to prevent injection
+  return val.replace(/["'{}]/g, "")
+            .replace(/[\r\n]+/g, " ") // Replace newlines with space
+            .slice(0, maxLength)
+            .trim();
 };
 
 export const identifyPlant = async (base64Image: string): Promise<Partial<Plant>> => {
@@ -123,8 +124,8 @@ export const identifyPlant = async (base64Image: string): Promise<Partial<Plant>
 export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant>> => {
   try {
     const ai = getGeminiClient();
-    // Security: Use unified sanitizer
-    const sanitizedName = sanitizeForContext(name);
+    // Security: Sanitize input to prevent Prompt Injection
+    const sanitizedName = sanitizeForPrompt(name);
 
     if (!sanitizedName || sanitizedName === "Desconhecido") throw new Error("Nome da planta inválido");
 
@@ -211,18 +212,16 @@ export const sendChatMessage = async (
     let systemInstruction = "Você é o EcoGuardian, um especialista amigável em plantas. Responda em Português do Brasil.";
     
     if (userProfile) {
-      // Security: Sanitize all user-controlled data before injecting into system prompt
-      const dwelling = sanitizeForContext(userProfile.dwellingType);
-      const city = sanitizeForContext(userProfile.location?.city);
-
       const plantNames = userProfile.plants
-        .map(p => sanitizeForContext(p.commonName))
+        .map(p => sanitizeForPrompt(p.commonName, 50))
         .join(", ");
+
+      const dwelling = sanitizeForPrompt(userProfile.dwellingType, 20) || 'Casa/Apartamento';
+      const city = sanitizeForPrompt(userProfile.location?.city, 50) || 'Desconhecida';
 
       systemInstruction += `\nO usuário vive em: ${dwelling}.`;
       systemInstruction += `\nLocalização: ${city}.`;
-
-      if (plantNames && plantNames.length > 0) {
+      if (plantNames) {
         systemInstruction += `\nPlantas do usuário: ${plantNames}.`;
       } else {
         systemInstruction += `\nO usuário ainda não tem plantas cadastradas.`;
