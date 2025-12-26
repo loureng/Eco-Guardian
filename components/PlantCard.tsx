@@ -2,6 +2,7 @@ import { ChevronDown, BookOpen, Globe, Sparkles, BarChart3 } from 'lucide-react'
 
 import React, { useMemo, useState } from 'react';
 import { Plant, WeatherData } from '../types';
+import { WeatherFactors } from '../services/plantLogic';
 import { 
   Droplets, Thermometer, Sun, AlertTriangle, Trash2, CalendarClock, 
   TrendingUp, TrendingDown, CheckCircle2, Info, CalendarPlus,
@@ -13,30 +14,13 @@ import { DATE_FORMATTER } from '../services/formatters';
 interface Props {
   plant: Plant;
   weather: WeatherData | null;
+  weatherFactors?: WeatherFactors;
   onWater: (id: string) => void;
   onDelete: (id: string) => void;
   onSchedule: (plant: Plant, date: Date) => void;
 }
 
-// ⚡ Bolt Optimization: Move helper functions outside component to prevent recreation on every render
-const getAlertStyle = (type: string) => {
-  switch(type) {
-    case 'danger': return 'bg-red-50 text-red-700 border-red-100';
-    case 'warning': return 'bg-amber-50 text-amber-700 border-amber-100';
-    case 'success': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-    default: return 'bg-blue-50 text-blue-700 border-blue-100';
-  }
-};
-
-const getAlertIcon = (type: string) => {
-  switch(type) {
-    case 'danger': return <AlertTriangle size={14} />;
-    case 'success': return <CheckCircle2 size={14} />;
-    default: return <Info size={14} />;
-  }
-};
-
-const PlantCardComponent: React.FC<Props> = ({ plant, weather, onWater, onDelete, onSchedule }) => {
+const PlantCardComponent: React.FC<Props> = ({ plant, weather, weatherFactors, onWater, onDelete, onSchedule }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
   // Real-time Logic Calculation (Daily Review)
@@ -44,7 +28,7 @@ const PlantCardComponent: React.FC<Props> = ({ plant, weather, onWater, onDelete
   const activeAlerts = useMemo(() => checkPlantHealth(plant, weather), [plant, weather]);
   
   // Calculate Smart Schedule based on full meteorology
-  const schedule = useMemo(() => calculateSmartWatering(plant, weather), [plant, weather]);
+  const schedule = useMemo(() => calculateSmartWatering(plant, weather, weatherFactors), [plant, weather, weatherFactors]);
 
   const isUrgent = schedule.daysRemaining <= 0;
   const isToday = schedule.daysRemaining === 0;
@@ -290,9 +274,15 @@ const PlantCardComponent: React.FC<Props> = ({ plant, weather, onWater, onDelete
                          const isFuture = item.type === 'future';
                          
                          return (
-                           <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-1 group relative">
+                           <div
+                             key={i}
+                             tabIndex={0}
+                             role="img"
+                             aria-label={`${isFuture ? 'Previsão para' : 'Regado em'} ${DATE_FORMATTER.format(item.date)}. Intervalo de ${item.days} dias.`}
+                             className="flex-1 flex flex-col items-center justify-end h-full gap-1 group relative focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-sm cursor-help"
+                           >
                               {/* Floating Tooltip */}
-                              <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 bg-slate-800 text-white text-[10px] font-bold py-1 px-2 rounded shadow-lg z-20 whitespace-nowrap pointer-events-none">
+                              <div className="absolute -top-8 opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 group-focus:translate-y-0 bg-slate-800 text-white text-[10px] font-bold py-1 px-2 rounded shadow-lg z-20 whitespace-nowrap pointer-events-none">
                                 {item.days} dias
                                 <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
                               </div>

@@ -60,6 +60,16 @@ const sanitizeArray = (val: unknown): string[] => {
   return [];
 };
 
+// Security: Sanitize input to prevent Prompt Injection
+export const sanitizeForPrompt = (val: string | undefined | null, maxLength = 100): string => {
+  if (!val) return "";
+  // Remove quotes, braces, and newlines to prevent injection
+  return val.replace(/["'{}]/g, "")
+            .replace(/[\r\n]+/g, " ") // Replace newlines with space
+            .slice(0, maxLength)
+            .trim();
+};
+
 export const identifyPlant = async (base64Image: string): Promise<Partial<Plant>> => {
   try {
     const ai = getGeminiClient();
@@ -115,8 +125,7 @@ export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant
   try {
     const ai = getGeminiClient();
     // Security: Sanitize input to prevent Prompt Injection
-    // Remove quotes and limit length to prevent malicious payload construction
-    const sanitizedName = name.replace(/["'{}]/g, "").slice(0, 100).trim();
+    const sanitizedName = sanitizeForPrompt(name);
 
     if (!sanitizedName) throw new Error("Nome da planta inválido");
 
@@ -202,9 +211,15 @@ export const sendChatMessage = async (
     let systemInstruction = "Você é o EcoGuardian, um especialista amigável em plantas. Responda em Português do Brasil.";
     
     if (userProfile) {
-      const plantNames = userProfile.plants.map(p => p.commonName).join(", ");
-      systemInstruction += `\nO usuário vive em: ${userProfile.dwellingType || 'Casa/Apartamento'}.`;
-      systemInstruction += `\nLocalização: ${userProfile.location?.city || 'Desconhecida'}.`;
+      const plantNames = userProfile.plants
+        .map(p => sanitizeForPrompt(p.commonName, 50))
+        .join(", ");
+
+      const dwelling = sanitizeForPrompt(userProfile.dwellingType, 20) || 'Casa/Apartamento';
+      const city = sanitizeForPrompt(userProfile.location?.city, 50) || 'Desconhecida';
+
+      systemInstruction += `\nO usuário vive em: ${dwelling}.`;
+      systemInstruction += `\nLocalização: ${city}.`;
       if (plantNames) {
         systemInstruction += `\nPlantas do usuário: ${plantNames}.`;
       } else {
