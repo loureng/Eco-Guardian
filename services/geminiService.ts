@@ -127,7 +127,7 @@ export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant
     // Security: Sanitize input to prevent Prompt Injection
     const sanitizedName = sanitizeForPrompt(name);
 
-    if (!sanitizedName) throw new Error("Nome da planta inválido");
+    if (!sanitizedName || sanitizedName === "Desconhecido") throw new Error("Nome da planta inválido");
 
     const prompt = PLANT_DETAILS_PROMPT.replace("{{NAME}}", sanitizedName);
 
@@ -174,7 +174,8 @@ export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant
 export const generatePlantImage = async (plantName: string): Promise<string | null> => {
   try {
     const ai = getGeminiClient();
-    const prompt = `A professional, high-quality, photorealistic close-up photo of a ${plantName} plant in a modern pot. Bright natural lighting, soft shadows, blurred living room background. 4k resolution.`;
+    const cleanName = sanitizeForContext(plantName);
+    const prompt = `A professional, high-quality, photorealistic close-up photo of a ${cleanName} plant in a modern pot. Bright natural lighting, soft shadows, blurred living room background. 4k resolution.`;
 
     const response = await ai.models.generateImages({
       model: 'imagen-4.0-generate-001',
