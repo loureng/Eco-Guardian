@@ -267,12 +267,13 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
                 accept="image/*" 
                 onChange={handleImageAutoFill}
                 disabled={isSearching || isAnalyzingImage}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 peer"
+                aria-label="Upload de foto para identificação"
              />
-             <button className="w-full flex items-center justify-center gap-2 bg-white border border-emerald-200 text-emerald-700 py-2 rounded-lg hover:bg-emerald-100 transition-colors font-medium text-sm">
+             <div className="w-full flex items-center justify-center gap-2 bg-white border border-emerald-200 text-emerald-700 py-2 rounded-lg hover:bg-emerald-100 transition-colors font-medium text-sm peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-500 peer-focus-visible:ring-offset-2">
                 {isAnalyzingImage ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
                 {isAnalyzingImage ? "Analisando Imagem..." : "Tirar Foto / Galeria"}
-             </button>
+             </div>
            </div>
         </div>
         

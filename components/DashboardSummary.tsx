@@ -9,9 +9,10 @@ import type { WeatherFactors } from '../services/plantLogic';
 interface Props {
   plants: Plant[];
   weather: WeatherData | null;
+  weatherFactors?: WeatherFactors;
 }
 
-export const DashboardSummary = React.memo<Props>(({ plants, weather }) => {
+export const DashboardSummary = React.memo<Props>(({ plants, weather, weatherFactors: propWeatherFactors }) => {
   // Memoize calculations to prevent re-calculation on every render
   const summary = useMemo(() => {
     if (plants.length === 0) return null;
