@@ -174,7 +174,8 @@ export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant
 export const generatePlantImage = async (plantName: string): Promise<string | null> => {
   try {
     const ai = getGeminiClient();
-    const cleanName = sanitizeForContext(plantName);
+    // Security: Reuse sanitizeForPrompt as context sanitizer
+    const cleanName = sanitizeForPrompt(plantName);
     const prompt = `A professional, high-quality, photorealistic close-up photo of a ${cleanName} plant in a modern pot. Bright natural lighting, soft shadows, blurred living room background. 4k resolution.`;
 
     const response = await ai.models.generateImages({
