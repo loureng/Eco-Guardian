@@ -1,10 +1,10 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { UserProfile, Plant, UserLocation, WeatherData, SunTolerance, Achievement, DwellingType } from './types';
 import { loadUser, saveUser } from './services/storageService';
 import { identifyPlant, getPlantDetailsByName, generatePlantImage } from './services/geminiService';
 import { fetchLocalWeather } from './services/weatherService';
-import { getAggregateAlerts } from './services/plantLogic';
+import { getAggregateAlerts, analyzeWeatherFactors } from './services/plantLogic';
 import { requestNotificationPermission, processAlertsForNotifications } from './services/notificationService';
 import { checkNewAchievements, ACHIEVEMENTS } from './services/gamificationService';
 import { DEFAULT_PLANT_IMAGE } from './constants';

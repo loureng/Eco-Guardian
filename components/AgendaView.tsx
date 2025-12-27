@@ -4,21 +4,25 @@ import { Plant, WeatherData } from '../types';
 import { calculateSmartWatering } from '../services/plantLogic';
 import { Calendar, CheckCircle2, Droplets, Clock, CalendarPlus } from 'lucide-react';
 
+import { WeatherFactors } from '../services/plantLogic';
+
 interface Props {
   plants: Plant[];
   weather: WeatherData | null;
+  weatherFactors?: WeatherFactors;
   onWater: (id: string) => void;
   onSchedule: (plant: Plant, date: Date) => void;
 }
 
-export const AgendaView: React.FC<Props> = ({ plants, weather, onWater, onSchedule }) => {
+export const AgendaView: React.FC<Props> = ({ plants, weather, weatherFactors, onWater, onSchedule }) => {
   
   const scheduleData = useMemo(() => {
     const today = new Date();
     today.setHours(0,0,0,0);
 
     const items = plants.map(plant => {
-      const info = calculateSmartWatering(plant, weather);
+      // ⚡ Bolt Optimization: Use precomputed weather factors
+      const info = calculateSmartWatering(plant, weather, weatherFactors);
       return { plant, info };
     });
 
