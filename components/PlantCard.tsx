@@ -4,8 +4,8 @@ import React, { useMemo, useState } from 'react';
 import { Plant, WeatherData } from '../types';
 import { WeatherFactors } from '../services/plantLogic';
 import { 
-  Droplets, Thermometer, Sun, AlertTriangle, Trash2, CalendarClock, 
-  TrendingUp, TrendingDown, CheckCircle2, Info, CalendarPlus,
+  Droplets, Thermometer, Sun, Trash2, CalendarClock,
+  TrendingUp, TrendingDown, CheckCircle2, CalendarPlus,
   Wind, Sprout, Layers
 } from 'lucide-react';
 import { checkPlantHealth, calculateSmartWatering } from '../services/plantLogic';
