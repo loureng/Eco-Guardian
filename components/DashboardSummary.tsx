@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 import { Plant, WeatherData } from '../types';
 import { calculateSmartWatering, checkPlantHealth, analyzeWeatherFactors } from '../services/plantLogic';
 import { Droplets, CheckCircle2, AlertTriangle, CloudRain } from 'lucide-react';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 import type { WeatherFactors } from '../services/plantLogic';
 
 interface Props {
