@@ -1,4 +1,3 @@
-
 /**
  * Security utility functions for EcoGuardian.
  * Centralizes security logic to ensure consistency and testability.
@@ -22,15 +21,15 @@ export const isSafeUrl = (url: string): boolean => {
 };
 
 /**
- * Sanitizes user input for display to prevent XSS.
- * Note: React handles most of this automatically, but this is useful for
- * raw HTML manipulation or other contexts.
+ * Sanitizes user input by stripping HTML tags to prevent XSS.
+ * This is useful for cleaning up plain text inputs like plant names or categories
+ * where no HTML markup is expected or allowed.
+ *
+ * Example: "<b>Rose</b>" -> "Rose"
+ * Example: "<script>alert(1)</script>" -> "alert(1)" (content remains, tag removed)
  */
 export const sanitizeInput = (input: string): string => {
-  return input
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+  if (!input) return "";
+  // Strip all HTML tags
+  return input.replace(/<\/?[^>]+(>|$)/g, "").trim();
 };
