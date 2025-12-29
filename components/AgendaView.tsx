@@ -37,7 +37,7 @@ export const AgendaView: React.FC<Props> = ({ plants, weather, weatherFactors, o
     };
 
     return groups;
-  }, [plants, weather]);
+  }, [plants, weather, weatherFactors]);
 
   if (plants.length === 0) {
     return (
@@ -82,6 +82,8 @@ export const AgendaView: React.FC<Props> = ({ plants, weather, weatherFactors, o
                 <button 
                   onClick={() => onWater(plant.id)}
                   className="bg-emerald-600 text-white p-2.5 rounded-full shadow-lg shadow-emerald-200 hover:scale-105 transition-transform"
+                  aria-label={`Regar ${plant.commonName}`}
+                  title={`Regar ${plant.commonName}`}
                 >
                   <Droplets size={20} />
                 </button>
@@ -125,6 +127,7 @@ export const AgendaView: React.FC<Props> = ({ plants, weather, weatherFactors, o
                    <button 
                      onClick={() => onSchedule(plant, info.nextDate)}
                      className="flex items-center justify-center gap-2 text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg hover:bg-emerald-100 transition-colors w-full sm:w-auto"
+                     aria-label={`Agendar rega de ${plant.commonName} no calendário`}
                    >
                      <CalendarPlus size={14} /> Integrar Calendário
                    </button>
