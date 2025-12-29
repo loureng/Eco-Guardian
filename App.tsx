@@ -18,8 +18,9 @@ import { ConfirmationModal } from './components/ConfirmationModal';
 import { AchievementPopup } from './components/AchievementPopup';
 import { CalendarModal } from './components/CalendarModal';
 import { 
-  Plus, Leaf, Camera, RefreshCw, Search, Sprout, Trees, Flower2, Droplets, Trophy, Lock, 
-  Menu, X, LogOut, ChevronRight, CalendarDays, Home, Building
+  Plus, Leaf, Camera, RefreshCw, Search, Sprout, Trees, Trophy, Lock,
+  Menu, X, LogOut, ChevronRight, CalendarDays, Home, Building,
+  Flower2, Droplets
 } from 'lucide-react';
 
 // Lazy load heavy components
@@ -33,6 +34,18 @@ const LoadingFallback = () => (
     <RefreshCw className="w-8 h-8 text-emerald-500 animate-spin" />
   </div>
 );
+
+// Helper for icons mapping in profile
+// ⚡ Bolt Optimization: Moved outside component to prevent re-creation on every render
+const getBadgeIcon = (name: string, size: number = 20) => {
+  switch (name) {
+    case 'Sprout': return <Sprout size={size} />;
+    case 'Trees': return <Trees size={size} />;
+    case 'Flower2': return <Flower2 size={size} />;
+    case 'Droplets': return <Droplets size={size} />;
+    default: return <Trophy size={size} />;
+  }
+};
 
 const App: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -67,25 +80,32 @@ const App: React.FC = () => {
   const [selectedDwelling, setSelectedDwelling] = useState<DwellingType>('Apartamento');
 
   // Helper to trigger errors
-  const triggerError = (msg: string) => {
+  const triggerError = useCallback((msg: string) => {
     setErrorMessage(msg);
-  };
-
-  // Helper for icons mapping in profile
-  const getBadgeIcon = (name: string, size: number = 20) => {
-    switch (name) {
-      case 'Sprout': return <Sprout size={size} />;
-      case 'Trees': return <Trees size={size} />;
-      case 'Flower2': return <Flower2 size={size} />;
-      case 'Droplets': return <Droplets size={size} />;
-      default: return <Trophy size={size} />;
-    }
-  };
+  }, []);
 
   // ⚡ Bolt Optimization: Calculate weather factors once for all plants
   const weatherFactors = useMemo(() =>
     weather ? analyzeWeatherFactors(weather) : undefined
   , [weather]);
+
+  const refreshWeather = useCallback(async (loc: UserLocation | null, plants?: Plant[]) => {
+    if (!loc) return;
+    setWeatherLoading(true);
+    try {
+      const data = await fetchLocalWeather(loc);
+      setWeather(data);
+      if (plants && plants.length > 0) {
+        const alerts = getAggregateAlerts(plants, data);
+        if (alerts.length > 0) processAlertsForNotifications(alerts);
+      }
+    } catch (e) {
+      console.error(e);
+      triggerError("Não foi possível atualizar o clima. Verifique sua conexão.");
+    } finally {
+      setWeatherLoading(false);
+    }
+  }, [triggerError]);
 
   // Initialize App
   useEffect(() => {
@@ -104,7 +124,7 @@ const App: React.FC = () => {
       refreshWeather(storedUser.location, storedUser.plants);
       requestNotificationPermission(); 
     }
-  }, []);
+  }, [refreshWeather]);
 
   // Keep a ref to user for stable callbacks
   const userRef = useRef(user);
@@ -117,35 +137,24 @@ const App: React.FC = () => {
     if (user) saveUser(user);
   }, [user]);
 
-  const refreshWeather = useCallback(async (loc: UserLocation | null, plants?: Plant[]) => {
-    if (!loc) return;
-    setWeatherLoading(true);
-    try {
-      const data = await fetchLocalWeather(loc);
-      setWeather(data);
-      if (plants && plants.length > 0) {
-        const alerts = getAggregateAlerts(plants, data);
-        if (alerts.length > 0) processAlertsForNotifications(alerts);
-      }
-    } catch (e) {
-      console.error(e);
-      triggerError("Não foi possível atualizar o clima. Verifique sua conexão.");
-    } finally {
-      setWeatherLoading(false);
-    }
+  const resetAddPlant = useCallback(() => {
+    setCapturedImage(null);
+    setPlantFormData(null);
+    setIsManualEntry(false);
+    setSearchName("");
   }, []);
 
   // Navigation Helper
-  const navigateTo = (target: 'welcome' | 'dashboard' | 'agenda' | 'add-plant' | 'profile') => {
+  const navigateTo = useCallback((target: 'welcome' | 'dashboard' | 'agenda' | 'add-plant' | 'profile') => {
     setView(target);
     setIsMenuOpen(false);
     if (target === 'add-plant') resetAddPlant();
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, [resetAddPlant]);
 
   // --- Logic Functions (Login, Image, etc) ---
   
-  const handleLogin = () => {
+  const handleLogin = useCallback(() => {
     if (!navigator.geolocation) {
       triggerError("Seu navegador não suporta ou bloqueou a geolocalização.");
       return;
@@ -168,9 +177,15 @@ const App: React.FC = () => {
       (error) => { console.error(error); triggerError("Erro ao obter localização. Habilite o GPS."); },
       { timeout: 10000 }
     );
-  };
+  }, [selectedDwelling, refreshWeather, triggerError]);
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleManualFallback = useCallback(() => {
+    setPlantFormData({ commonName: "", scientificName: "", wateringFrequencyDays: 7, sunTolerance: SunTolerance.PARTIAL, minTemp: 10, maxTemp: 30 });
+    if (!capturedImage) setCapturedImage(DEFAULT_PLANT_IMAGE);
+    setIsManualEntry(true);
+  }, [capturedImage]);
+
+  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) { triggerError("Imagem muito grande."); return; }
@@ -190,9 +205,9 @@ const App: React.FC = () => {
       } finally { setIsAnalyzing(false); }
     };
     reader.readAsDataURL(file);
-  };
+  }, [handleManualFallback, triggerError]);
 
-  const handleNameSearch = async () => {
+  const handleNameSearch = useCallback(async () => {
     if (!searchName.trim()) return;
     setIsAnalyzing(true);
     setCapturedImage(null);
@@ -209,18 +224,12 @@ const App: React.FC = () => {
       triggerError("IA indisponível. Preencha manual.");
       handleManualFallback();
     } finally { setIsAnalyzing(false); }
-  };
+  }, [searchName, handleManualFallback, triggerError]);
 
-  const handleManualFallback = () => {
-    setPlantFormData({ commonName: "", scientificName: "", wateringFrequencyDays: 7, sunTolerance: SunTolerance.PARTIAL, minTemp: 10, maxTemp: 30 });
-    if (!capturedImage) setCapturedImage(DEFAULT_PLANT_IMAGE);
-    setIsManualEntry(true);
-  };
-
-  const handleManualEntryStart = () => {
+  const handleManualEntryStart = useCallback(() => {
     setCapturedImage(DEFAULT_PLANT_IMAGE);
     handleManualFallback();
-  };
+  }, [handleManualFallback]);
 
   const handleSavePlant = useCallback((data: Partial<Plant>) => {
     const currentUser = userRef.current;
@@ -268,7 +277,7 @@ const App: React.FC = () => {
     setSearchName("");
     setView('dashboard');
     refreshWeather(currentUser.location, updatedPlants);
-  }, [capturedImage]); // capturedImage might still be a dependency if not ref'd, but it's less critical for re-renders than user
+  }, [capturedImage, refreshWeather, triggerError]);
 
   const handleWater = useCallback((id: string) => {
     const currentUser = userRef.current;
@@ -286,25 +295,18 @@ const App: React.FC = () => {
 
   const handleDeleteRequest = useCallback((id: string) => setPlantToDelete(id), []);
   
-  const confirmDelete = () => {
+  const confirmDelete = useCallback(() => {
     const currentUser = userRef.current;
     if (!currentUser || !plantToDelete) return;
     const updatedPlants = currentUser.plants.filter(p => p.id !== plantToDelete);
     setUser({ ...currentUser, plants: updatedPlants });
     setPlantToDelete(null);
-  };
+  }, [plantToDelete]);
 
   const handleScheduleRequest = useCallback((plant: Plant, date: Date) => {
     setPlantToSchedule({ plant, date });
     setCalendarModalOpen(true);
   }, []);
-
-  const resetAddPlant = () => {
-    setCapturedImage(null);
-    setPlantFormData(null);
-    setIsManualEntry(false);
-    setSearchName("");
-  };
 
   // --- Render ---
 
