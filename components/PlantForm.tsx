@@ -4,6 +4,7 @@ import React, { useState, useEffect, useId } from 'react';
 import { Plant, SunTolerance } from '../types';
 import { Button } from './Button';
 import { getPlantDetailsByName, identifyPlant } from '../services/geminiService';
+import { sanitizeInput } from '../services/security';
 
 interface Props {
   initialData: Partial<Plant>;
@@ -131,7 +132,16 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
   const handleSave = () => {
     // Garante que a imagem local (possivelmente atualizada) seja enviada
     // E garante que campos extras da AI (descrição, origem, tips, fertilizer, soil, environment) sejam passados
-    onSave({ ...formData, imageUrl: localImage });
+
+    // Security: Sanitize inputs to prevent storing XSS payloads or malformed data
+    const safeData = {
+      ...formData,
+      commonName: formData.commonName ? sanitizeInput(formData.commonName) : formData.commonName,
+      category: formData.category ? sanitizeInput(formData.category) : formData.category,
+      imageUrl: localImage
+    };
+
+    onSave(safeData);
   };
 
   if (!isEditing) {
@@ -345,6 +355,7 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
                  value={formData.category || ''}
                  onChange={(e) => handleChange('category', e.target.value)}
                  autoFocus
+                 maxLength={30} // Prevent DoS/Storage exhaustion
                />
                <button 
                  onClick={() => {
@@ -371,6 +382,7 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
               id={`${formId}-frequency`}
               type="number"
               min="1"
+              max="365"
               placeholder="Ex: 7"
               className="w-full p-2 border border-slate-200 rounded-lg"
               value={formData.wateringFrequencyDays || ''}
@@ -395,11 +407,11 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
         <div className="grid grid-cols-2 gap-3">
            <div>
              <label htmlFor={`${formId}-minTemp`} className="block text-xs font-bold uppercase text-slate-500 mb-1">Min Temp (°C)</label>
-             <input id={`${formId}-minTemp`} type="number" className="w-full p-2 border border-slate-200 rounded-lg" value={formData.minTemp || 0} onChange={e => handleChange('minTemp', parseInt(e.target.value))} />
+             <input id={`${formId}-minTemp`} type="number" min="-50" max="60" className="w-full p-2 border border-slate-200 rounded-lg" value={formData.minTemp || 0} onChange={e => handleChange('minTemp', parseInt(e.target.value))} />
            </div>
            <div>
              <label htmlFor={`${formId}-maxTemp`} className="block text-xs font-bold uppercase text-slate-500 mb-1">Máx Temp (°C)</label>
-             <input id={`${formId}-maxTemp`} type="number" className="w-full p-2 border border-slate-200 rounded-lg" value={formData.maxTemp || 35} onChange={e => handleChange('maxTemp', parseInt(e.target.value))} />
+             <input id={`${formId}-maxTemp`} type="number" min="-50" max="60" className="w-full p-2 border border-slate-200 rounded-lg" value={formData.maxTemp || 35} onChange={e => handleChange('maxTemp', parseInt(e.target.value))} />
            </div>
         </div>
       </div>

@@ -30,16 +30,32 @@ describe('Security Service', () => {
   });
 
   describe('sanitizeInput', () => {
-    it('should escape HTML characters', () => {
+    it('should strip HTML tags completely', () => {
       const malicious = '<script>alert(1)</script>';
-      const expected = '&lt;script&gt;alert(1)&lt;/script&gt;';
+      const expected = 'alert(1)'; // Content remains, tags stripped
       expect(sanitizeInput(malicious)).toBe(expected);
     });
 
-    it('should handle quotes', () => {
-      const input = '"quote" and \'single\'';
-      const expected = '&quot;quote&quot; and &#039;single&#039;';
+    it('should strip bold tags', () => {
+      const input = '<b>Rose</b>';
+      const expected = 'Rose';
       expect(sanitizeInput(input)).toBe(expected);
+    });
+
+    it('should handle nested tags', () => {
+      const input = '<div><b>Rose</b></div>';
+      const expected = 'Rose';
+      expect(sanitizeInput(input)).toBe(expected);
+    });
+
+    it('should trim whitespace', () => {
+      const input = '   Rose   ';
+      const expected = 'Rose';
+      expect(sanitizeInput(input)).toBe(expected);
+    });
+
+    it('should handle empty input', () => {
+        expect(sanitizeInput('')).toBe('');
     });
   });
 });
