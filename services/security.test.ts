@@ -1,6 +1,6 @@
 
 import { describe, it, expect } from 'vitest';
-import { isSafeUrl, sanitizeInput } from './security';
+import { isSafeUrl, isSafeSrc, sanitizeInput } from './security';
 
 describe('Security Service', () => {
   describe('isSafeUrl', () => {
@@ -10,6 +10,11 @@ describe('Security Service', () => {
 
     it('should allow valid https URLs', () => {
       expect(isSafeUrl('https://example.com')).toBe(true);
+    });
+
+    it('should allow relative URLs', () => {
+        expect(isSafeUrl('/dashboard')).toBe(true);
+        expect(isSafeUrl('./assets/logo.png')).toBe(true);
     });
 
     it('should reject javascript: URLs', () => {
@@ -26,6 +31,36 @@ describe('Security Service', () => {
 
     it('should reject empty strings', () => {
       expect(isSafeUrl('')).toBe(false);
+    });
+  });
+
+  describe('isSafeSrc', () => {
+    it('should allow valid http URLs', () => {
+      expect(isSafeSrc('http://example.com/img.jpg')).toBe(true);
+    });
+
+    it('should allow valid https URLs', () => {
+      expect(isSafeSrc('https://example.com/img.jpg')).toBe(true);
+    });
+
+    it('should allow valid data URLs', () => {
+      expect(isSafeSrc('data:image/png;base64,abc')).toBe(true);
+    });
+
+    it('should allow relative URLs', () => {
+        expect(isSafeSrc('/images/plant.png')).toBe(true);
+    });
+
+    it('should reject javascript: URLs', () => {
+      expect(isSafeSrc('javascript:alert(1)')).toBe(false);
+    });
+
+    it('should reject invalid URLs', () => {
+      expect(isSafeSrc('not-a-url')).toBe(false);
+    });
+
+    it('should reject empty strings', () => {
+      expect(isSafeSrc('')).toBe(false);
     });
   });
 

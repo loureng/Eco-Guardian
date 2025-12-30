@@ -6,10 +6,13 @@ import { WeatherFactors } from '../services/plantLogic';
 import { 
   Droplets, Thermometer, Sun, Trash2, CalendarClock,
   TrendingUp, TrendingDown, CheckCircle2, CalendarPlus,
-  Wind, Sprout, Layers
+  Wind, Sprout, Layers,
+  AlertTriangle, Info
 } from 'lucide-react';
 import { checkPlantHealth, calculateSmartWatering } from '../services/plantLogic';
 import { DATE_FORMATTER } from '../services/formatters';
+import { isSafeSrc } from '../services/security';
+import { DEFAULT_PLANT_IMAGE } from '../constants';
 
 interface Props {
   plant: Plant;
@@ -93,6 +96,9 @@ const PlantCardComponent: React.FC<Props> = ({ plant, weather, weatherFactors, o
     10 
   );
 
+  // Security: Ensure the image source is safe (http/https/data) before rendering
+  const safeImageUrl = plant.imageUrl && isSafeSrc(plant.imageUrl) ? plant.imageUrl : DEFAULT_PLANT_IMAGE;
+
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-md transition-shadow group relative">
       {/* Header Image Area - Clickable */}
@@ -105,7 +111,7 @@ const PlantCardComponent: React.FC<Props> = ({ plant, weather, weatherFactors, o
           aria-label={isExpanded ? `Recolher detalhes de ${plant.commonName}` : `Expandir detalhes de ${plant.commonName}`}
         >
           <img
-            src={plant.imageUrl || "https://picsum.photos/400/300"}
+            src={safeImageUrl}
             alt={plant.commonName}
             loading="lazy"
             decoding="async"
