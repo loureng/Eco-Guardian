@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 import { Plant, WeatherData } from '../types';
 import { calculateSmartWatering, checkPlantHealth, analyzeWeatherFactors } from '../services/plantLogic';
 import { Droplets, CheckCircle2, AlertTriangle, CloudRain } from 'lucide-react';
+import { WEEKDAY_LONG_FORMATTER } from '../services/formatters';
 
 import type { WeatherFactors } from '../services/plantLogic';
 
@@ -95,7 +96,7 @@ export const DashboardSummary = React.memo<Props>(({ plants, weather, weatherFac
               <p className="text-xs font-bold uppercase text-indigo-400">Previsão de Chuva</p>
               <p className="text-sm font-bold text-slate-700">
                 {nextRain 
-                  ? `Chuva esperada para ${new Date(nextRain.date).toLocaleDateString('pt-BR', { weekday: 'long' })}` 
+                  ? `Chuva esperada para ${WEEKDAY_LONG_FORMATTER.format(new Date(nextRain.date))}`
                   : "Sem chuva forte nos próximos 5 dias"}
               </p>
             </div>

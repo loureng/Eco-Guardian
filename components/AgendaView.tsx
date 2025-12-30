@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 import { Plant, WeatherData } from '../types';
 import { calculateSmartWatering } from '../services/plantLogic';
 import { Calendar, CheckCircle2, Droplets, Clock, CalendarPlus } from 'lucide-react';
+import { WEEKDAY_SHORT_FORMATTER, DATE_FULL_SHORT_FORMATTER } from '../services/formatters';
 
 import { WeatherFactors } from '../services/plantLogic';
 
@@ -109,7 +110,7 @@ export const AgendaView: React.FC<Props> = ({ plants, weather, weatherFactors, o
                    <div className="flex items-center gap-3">
                       <div className="flex flex-col items-center bg-slate-50 p-2 rounded-lg min-w-[50px]">
                         <span className="text-xs font-bold text-slate-400 uppercase">
-                          {info.nextDate.toLocaleDateString('pt-BR', { weekday: 'short' }).slice(0, 3)}
+                          {WEEKDAY_SHORT_FORMATTER.format(info.nextDate).slice(0, 3)}
                         </span>
                         <span className="text-xl font-bold text-slate-800">
                           {info.nextDate.getDate()}
@@ -147,7 +148,7 @@ export const AgendaView: React.FC<Props> = ({ plants, weather, weatherFactors, o
               <div key={plant.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg text-slate-500">
                  <span className="font-medium">{plant.commonName}</span>
                  <span className="text-xs bg-white px-2 py-1 rounded border border-slate-100">
-                   {info.nextDate.toLocaleDateString('pt-BR')}
+                   {DATE_FULL_SHORT_FORMATTER.format(info.nextDate)}
                  </span>
               </div>
             ))}
