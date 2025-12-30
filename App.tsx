@@ -393,6 +393,7 @@ const App: React.FC = () => {
                 onClick={() => refreshWeather(user?.location || null, user?.plants)} 
                 className="p-2 text-slate-500 hover:text-emerald-600 hover:bg-slate-50 rounded-full transition-all"
                 title="Atualizar Clima"
+                aria-label="Atualizar Clima"
               >
                 <RefreshCw size={20} className={weatherLoading ? "animate-spin text-emerald-600" : ""} />
               </button>
@@ -402,6 +403,7 @@ const App: React.FC = () => {
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className={`p-2 rounded-lg transition-colors ${isMenuOpen ? 'bg-slate-100 text-slate-800' : 'text-slate-600 hover:bg-slate-50'}`}
               aria-label="Menu"
+              aria-expanded={isMenuOpen}
             >
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -550,9 +552,9 @@ const App: React.FC = () => {
         {view === 'add-plant' && (
           <div className="animate-[fadeIn_0.3s_ease-out]">
             <div className="mb-6 flex items-center gap-2 text-sm text-slate-500">
-               <span onClick={() => navigateTo('dashboard')} className="cursor-pointer hover:text-emerald-600">Home</span>
-               <ChevronRight size={14} />
-               <span className="font-bold text-slate-800">Nova Planta</span>
+               <button type="button" onClick={() => navigateTo('dashboard')} className="hover:text-emerald-600 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded px-1">Home</button>
+               <ChevronRight size={14} aria-hidden="true" />
+               <span className="font-bold text-slate-800 px-1">Nova Planta</span>
             </div>
 
             <h1 className="text-2xl font-bold text-slate-800 mb-6">Cadastrar Planta</h1>
@@ -642,9 +644,9 @@ const App: React.FC = () => {
         {view === 'profile' && (
           <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
             <div className="mb-4 flex items-center gap-2 text-sm text-slate-500">
-               <span onClick={() => navigateTo('dashboard')} className="cursor-pointer hover:text-emerald-600">Home</span>
-               <ChevronRight size={14} />
-               <span className="font-bold text-slate-800">Perfil</span>
+               <button type="button" onClick={() => navigateTo('dashboard')} className="hover:text-emerald-600 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded px-1">Home</button>
+               <ChevronRight size={14} aria-hidden="true" />
+               <span className="font-bold text-slate-800 px-1">Perfil</span>
             </div>
 
             <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 text-center relative overflow-hidden">
