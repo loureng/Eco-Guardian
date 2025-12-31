@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type, Schema, Content } from "@google/genai";
 import { Plant, SunTolerance, ChatMessage, UserProfile } from "../types";
 import { PLANT_IDENTIFICATION_PROMPT, PLANT_DETAILS_PROMPT } from "../constants";
@@ -152,7 +151,11 @@ export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant
 export const generatePlantImage = async (plantName: string): Promise<string | null> => {
   try {
     const ai = getGeminiClient();
-    const prompt = `A professional, high-quality, photorealistic close-up photo of a ${plantName} plant in a modern pot. Bright natural lighting, soft shadows, blurred living room background. 4k resolution.`;
+    // Prompt atualizado para focar no habitat natural e estética "National Geographic"
+    const prompt = `A cinematic, photorealistic close-up shot of a ${plantName} plant.
+    Focus on the plant's texture and leaves details.
+    Background: A beautiful, slightly blurred (bokeh) representation of its natural origin or habitat (like a rainforest, desert, misty mountains, or tropical garden) to provide depth and atmosphere.
+    Lighting: Soft natural light, golden hour, high contrast, 4k resolution, highly detailed texture, aesthetic photography.`;
 
     const response = await ai.models.generateImages({
       model: 'imagen-4.0-generate-001',
