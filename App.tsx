@@ -132,6 +132,12 @@ const App: React.FC = () => {
     userRef.current = user;
   }, [user]);
 
+  // ⚡ Bolt Optimization: Ref to access weather in callbacks without dependency
+  const weatherRef = useRef(weather);
+  useEffect(() => {
+    weatherRef.current = weather;
+  }, [weather]);
+
   // Save user changes
   useEffect(() => {
     if (user) saveUser(user);
@@ -276,7 +282,15 @@ const App: React.FC = () => {
     setIsManualEntry(false);
     setSearchName("");
     setView('dashboard');
-    refreshWeather(currentUser.location, updatedPlants);
+
+    // ⚡ Bolt Optimization: Use cached weather to check alerts instead of refetching
+    // This prevents a second re-render of the entire dashboard with new weather object reference
+    if (weatherRef.current) {
+      const alerts = getAggregateAlerts(updatedPlants, weatherRef.current);
+      if (alerts.length > 0) processAlertsForNotifications(alerts);
+    } else {
+      refreshWeather(currentUser.location, updatedPlants);
+    }
   }, [capturedImage, refreshWeather, triggerError]);
 
   const handleWater = useCallback((id: string) => {

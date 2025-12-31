@@ -6,7 +6,7 @@ import { WeatherFactors } from '../services/plantLogic';
 import { 
   Droplets, Thermometer, Sun, Trash2, CalendarClock,
   TrendingUp, TrendingDown, CheckCircle2, CalendarPlus,
-  Wind, Sprout, Layers
+  Wind, Sprout, Layers, AlertTriangle, Info
 } from 'lucide-react';
 import { checkPlantHealth, calculateSmartWatering } from '../services/plantLogic';
 import { DATE_FORMATTER } from '../services/formatters';
