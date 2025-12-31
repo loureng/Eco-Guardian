@@ -137,7 +137,13 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
     const safeData = {
       ...formData,
       commonName: formData.commonName ? sanitizeInput(formData.commonName) : formData.commonName,
+      scientificName: formData.scientificName ? sanitizeInput(formData.scientificName) : formData.scientificName,
       category: formData.category ? sanitizeInput(formData.category) : formData.category,
+      description: formData.description ? sanitizeInput(formData.description) : formData.description,
+      origin: formData.origin ? sanitizeInput(formData.origin) : formData.origin,
+      fertilizer: formData.fertilizer ? sanitizeInput(formData.fertilizer) : formData.fertilizer,
+      soil: formData.soil ? sanitizeInput(formData.soil) : formData.soil,
+      environmentTips: formData.environmentTips ? sanitizeInput(formData.environmentTips) : formData.environmentTips,
       imageUrl: localImage
     };
 
