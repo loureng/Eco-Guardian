@@ -80,10 +80,11 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
 
     } catch (error: any) {
       console.error("Erro na busca:", error);
+      // Tratamento específico para JSON inválido
       if (error instanceof SyntaxError || error.message?.includes('JSON')) {
-        setSearchError("A IA retornou dados incompletos ou inválidos. Tente reformular o nome.");
+        setSearchError("A IA retornou dados incompletos ou inválidos. Tente reformular o nome da planta.");
       } else {
-        setSearchError("Não encontramos essa planta. Tente outro nome ou preencha manualmente.");
+        setSearchError("Não conseguimos processar essa planta. Verifique sua conexão ou preencha manualmente.");
       }
     } finally {
       setIsSearching(false);
@@ -118,10 +119,11 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
         }
       } catch (error: any) {
         console.error("Erro ao identificar imagem no form:", error);
+        // Tratamento específico para JSON inválido
         if (error instanceof SyntaxError || error.message?.includes('JSON')) {
-           setSearchError("A imagem não gerou dados legíveis. Tente uma foto mais clara e focada.");
+           setSearchError("A imagem não gerou dados legíveis. Tente uma foto mais clara, focada e bem iluminada.");
         } else {
-           setSearchError("Não conseguimos identificar a planta pela foto. Tente buscar pelo nome.");
+           setSearchError("Não foi possível identificar a planta. Tente novamente ou use a busca por nome.");
         }
       } finally {
         setIsAnalyzingImage(false);
@@ -410,4 +412,3 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
     </div>
   );
 };
-    
