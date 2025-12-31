@@ -327,6 +327,7 @@ const App: React.FC = () => {
            <div className="flex gap-2">
              <button 
                onClick={() => setSelectedDwelling('Casa')}
+               aria-pressed={selectedDwelling === 'Casa'}
                className={`flex-1 flex flex-col items-center p-3 rounded-lg border-2 transition-all ${selectedDwelling === 'Casa' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-100 text-slate-400 hover:border-emerald-200'}`}
              >
                 <Home size={24} className="mb-1" />
@@ -334,6 +335,7 @@ const App: React.FC = () => {
              </button>
              <button 
                onClick={() => setSelectedDwelling('Apartamento')}
+               aria-pressed={selectedDwelling === 'Apartamento'}
                className={`flex-1 flex flex-col items-center p-3 rounded-lg border-2 transition-all ${selectedDwelling === 'Apartamento' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-100 text-slate-400 hover:border-emerald-200'}`}
              >
                 <Building size={24} className="mb-1" />
@@ -416,6 +418,7 @@ const App: React.FC = () => {
             <nav className="max-w-3xl mx-auto p-2 flex flex-col gap-1">
               <button 
                 onClick={() => navigateTo('dashboard')}
+                aria-current={view === 'dashboard' ? 'page' : undefined}
                 className={`flex items-center justify-between p-4 rounded-xl text-left ${view === 'dashboard' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
               >
                 <div className="flex items-center gap-3">
@@ -427,6 +430,7 @@ const App: React.FC = () => {
 
               <button 
                 onClick={() => navigateTo('agenda')}
+                aria-current={view === 'agenda' ? 'page' : undefined}
                 className={`flex items-center justify-between p-4 rounded-xl text-left ${view === 'agenda' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
               >
                 <div className="flex items-center gap-3">
@@ -438,6 +442,7 @@ const App: React.FC = () => {
 
               <button 
                 onClick={() => navigateTo('add-plant')}
+                aria-current={view === 'add-plant' ? 'page' : undefined}
                 className={`flex items-center justify-between p-4 rounded-xl text-left ${view === 'add-plant' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
               >
                 <div className="flex items-center gap-3">
@@ -449,6 +454,7 @@ const App: React.FC = () => {
 
               <button 
                 onClick={() => navigateTo('profile')}
+                aria-current={view === 'profile' ? 'page' : undefined}
                 className={`flex items-center justify-between p-4 rounded-xl text-left ${view === 'profile' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
               >
                 <div className="flex items-center gap-3">
@@ -523,6 +529,7 @@ const App: React.FC = () => {
                   {/* Card to add new plant inline */}
                   <button 
                     onClick={() => navigateTo('add-plant')}
+                    aria-label="Adicionar nova planta"
                     className="min-h-[300px] rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-3 text-slate-400 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50/50 transition-all group"
                   >
                     <div className="w-12 h-12 rounded-full bg-slate-100 group-hover:bg-emerald-100 flex items-center justify-center transition-colors">
@@ -591,6 +598,7 @@ const App: React.FC = () => {
                          value={searchName}
                          onChange={(e) => setSearchName(e.target.value)}
                          placeholder="Ex: Jiboia"
+                         aria-label="Nome da planta para busca"
                          className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-emerald-500"
                        />
                        <Button 
