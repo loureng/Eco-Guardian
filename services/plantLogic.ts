@@ -8,18 +8,25 @@ interface WateringSchedule {
   adjusted: boolean;
 }
 
-export interface WeatherFactors {
-  dryingFactor: number;
-  reasons: string[];
-}
-
 /**
- * Analisa as variáveis meteorológicas para determinar fatores de secagem globais.
- * Pode ser calculado uma única vez por atualização climática.
+ * Calcula a próxima data de rega utilizando todas as variáveis meteorológicas disponíveis.
+ * O 'Fator de Secagem' (Drying Factor) determina se o solo seca mais rápido (positivo) ou devagar (negativo).
  */
-export const analyzeWeatherFactors = (weather: WeatherData): WeatherFactors => {
+export const calculateSmartWatering = (plant: Plant, weather: WeatherData | null): WateringSchedule => {
+  const lastWatered = plant.lastWatered || Date.now();
+  const baseFrequency = plant.wateringFrequencyDays;
+  
+  if (!weather) {
+    const target = new Date(lastWatered);
+    target.setDate(target.getDate() + baseFrequency);
+    const diff = Math.ceil((target.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    return { nextDate: target, daysRemaining: diff, reason: "Cronograma padrão", adjusted: false };
+  }
+
+  // Fator acumulativo: Quanto maior, mais rápido a água evapora
   let dryingFactor = 0;
   let reasons: string[] = [];
+
   const current = weather.current;
 
   // 1. Temperatura (Peso Alto)
@@ -42,6 +49,7 @@ export const analyzeWeatherFactors = (weather: WeatherData): WeatherFactors => {
   }
 
   // 3. Índice UV (Peso Médio - Evaporação superficial)
+  // UV Alto seca a camada superficial do solo rapidamente
   if (current.uvIndex >= 8) {
     dryingFactor += 0.5;
     if (!reasons.includes("Sol forte")) reasons.push("UV Alto");
@@ -50,6 +58,7 @@ export const analyzeWeatherFactors = (weather: WeatherData): WeatherFactors => {
   // 4. Vento (Considerado via condição)
   if (current.condition === 'Tempestade' || current.condition === 'Nublado') {
      // Vento aumenta evaporação, mas nublado diminui.
+     // Se for tempestade (vento forte), seca mais rápido se não chover.
   }
 
   // 5. Previsão Futura (Próximos 3 dias)
@@ -69,31 +78,6 @@ export const analyzeWeatherFactors = (weather: WeatherData): WeatherFactors => {
     dryingFactor -= 2.0;
     reasons = ["Chuva hoje"];
   }
-
-  return { dryingFactor, reasons };
-};
-
-/**
- * Calcula a próxima data de rega utilizando todas as variáveis meteorológicas disponíveis.
- * O 'Fator de Secagem' (Drying Factor) determina se o solo seca mais rápido (positivo) ou devagar (negativo).
- */
-export const calculateSmartWatering = (
-  plant: Plant,
-  weather: WeatherData | null,
-  precomputedFactors?: WeatherFactors
-): WateringSchedule => {
-  const lastWatered = plant.lastWatered || Date.now();
-  const baseFrequency = plant.wateringFrequencyDays;
-
-  if (!weather) {
-    const target = new Date(lastWatered);
-    target.setDate(target.getDate() + baseFrequency);
-    const diff = Math.ceil((target.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-    return { nextDate: target, daysRemaining: diff, reason: "Cronograma padrão", adjusted: false };
-  }
-
-  // Use fatores pré-calculados ou analise agora
-  const { dryingFactor, reasons } = precomputedFactors || analyzeWeatherFactors(weather);
 
   // Cálculo Final
   let adjustedDays = Math.round(baseFrequency - dryingFactor);
@@ -138,14 +122,12 @@ export const checkPlantHealth = (plant: Plant, weather: WeatherData | null): Ale
   const current = weather.current;
   const tomorrow = weather.forecast[0];
 
-  // Otimização: Cache lower case category to avoid repeated allocations
-  const categoryLower = plant.category?.toLowerCase() || '';
-
-  const isSucculent = categoryLower.includes('suculenta') || categoryLower.includes('cacto');
+  const isSucculent = plant.category?.toLowerCase().includes('suculenta') || 
+                      plant.category?.toLowerCase().includes('cacto');
   
-  const isTropical = categoryLower.includes('tropical') ||
-                     categoryLower.includes('samambaia') ||
-                     categoryLower.includes('folhagem');
+  const isTropical = plant.category?.toLowerCase().includes('tropical') || 
+                     plant.category?.toLowerCase().includes('samambaia') ||
+                     plant.category?.toLowerCase().includes('folhagem');
 
   // --- 1. Gestão de Água e Chuva ---
   if (current.rainChance > 80 && isSucculent) {

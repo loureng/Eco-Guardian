@@ -1,10 +1,9 @@
-import { Edit2, Sprout, Layers, Wind, Loader2, Search, Camera, AlertCircle, X, Check } from 'lucide-react';
 
-import React, { useState, useEffect, useId } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plant, SunTolerance } from '../types';
 import { Button } from './Button';
+import { Edit2, Check, Search, Loader2, AlertCircle, Camera, ImagePlus, X, Wind, Layers, Sprout } from 'lucide-react';
 import { getPlantDetailsByName, identifyPlant } from '../services/geminiService';
-import { sanitizeInput } from '../services/security';
 
 interface Props {
   initialData: Partial<Plant>;
@@ -40,8 +39,6 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
   const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
 
-  const formId = useId();
-
   useEffect(() => {
     setFormData(initialData);
     setLocalImage(imageUrl);
@@ -56,7 +53,7 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
     }
   }, [initialData, imageUrl, isManualEntry]);
 
-  const handleChange = (field: keyof Plant, value: unknown) => {
+  const handleChange = (field: keyof Plant, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -81,9 +78,13 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
         setIsCustomCategory(false);
       }
 
-    } catch (error) {
-      console.error(error);
-      setSearchError("Não encontramos essa planta. Tente outro nome ou preencha manualmente.");
+    } catch (error: any) {
+      console.error("Erro na busca:", error);
+      if (error instanceof SyntaxError || error.message?.includes('JSON')) {
+        setSearchError("A IA retornou dados incompletos ou inválidos. Tente reformular o nome.");
+      } else {
+        setSearchError("Não encontramos essa planta. Tente outro nome ou preencha manualmente.");
+      }
     } finally {
       setIsSearching(false);
     }
@@ -93,55 +94,46 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setIsAnalyzingImage(true);
-    setSearchError(null);
+    // Preview imediato
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64 = reader.result as string;
+      setLocalImage(base64); // Atualiza preview
+      setIsAnalyzingImage(true);
+      setSearchError(null);
 
-    try {
-      // Security & Performance: Resize and compress image
-      // Prevents DoS (storage quota exceeded) and reduces payload size
-      const { processImage } = await import('../services/imageService');
-      const base64 = await processImage(file);
-
-      setLocalImage(base64);
-
-      // Chama Gemini Vision API
-      const result = await identifyPlant(base64);
-      setFormData(prev => ({
-        ...prev,
-        ...result
-      }));
-
-      // Update custom category state based on result
-      if (result.category && !CATEGORIES.includes(result.category)) {
-          setIsCustomCategory(true);
-      } else {
-          setIsCustomCategory(false);
+      try {
+        // Chama Gemini Vision API
+        const result = await identifyPlant(base64);
+        setFormData(prev => ({
+          ...prev,
+          ...result
+        }));
+        
+        // Update custom category state based on result
+        if (result.category && !CATEGORIES.includes(result.category)) {
+            setIsCustomCategory(true);
+        } else {
+            setIsCustomCategory(false);
+        }
+      } catch (error: any) {
+        console.error("Erro ao identificar imagem no form:", error);
+        if (error instanceof SyntaxError || error.message?.includes('JSON')) {
+           setSearchError("A imagem não gerou dados legíveis. Tente uma foto mais clara e focada.");
+        } else {
+           setSearchError("Não conseguimos identificar a planta pela foto. Tente buscar pelo nome.");
+        }
+      } finally {
+        setIsAnalyzingImage(false);
       }
-    } catch (error) {
-      console.error("Erro ao processar imagem:", error);
-      if (error instanceof Error) {
-        setSearchError(error.message);
-      } else {
-        setSearchError("Não conseguimos processar essa imagem. Tente outra.");
-      }
-    } finally {
-      setIsAnalyzingImage(false);
-    }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSave = () => {
     // Garante que a imagem local (possivelmente atualizada) seja enviada
     // E garante que campos extras da AI (descrição, origem, tips, fertilizer, soil, environment) sejam passados
-
-    // Security: Sanitize inputs to prevent storing XSS payloads or malformed data
-    const safeData = {
-      ...formData,
-      commonName: formData.commonName ? sanitizeInput(formData.commonName) : formData.commonName,
-      category: formData.category ? sanitizeInput(formData.category) : formData.category,
-      imageUrl: localImage
-    };
-
-    onSave(safeData);
+    onSave({ ...formData, imageUrl: localImage });
   };
 
   if (!isEditing) {
@@ -240,17 +232,15 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
         
         {/* Opção 1: Texto */}
         <div>
-          <label htmlFor={`${formId}-search`} className="block text-xs font-bold uppercase text-emerald-700 mb-2">Preencher com IA (Texto)</label>
+          <label className="block text-xs font-bold uppercase text-emerald-700 mb-2">Preencher com IA (Texto)</label>
           <div className="flex gap-2">
             <input 
-              id={`${formId}-search`}
               className={`flex-1 p-2 border border-emerald-200 rounded-lg text-sm focus:outline-emerald-500 transition-colors ${isSearching ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white'}`}
               placeholder="Digite o nome da planta..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !isSearching && handleSearch()}
               disabled={isSearching || isAnalyzingImage}
-              maxLength={100}
             />
             <button 
               onClick={handleSearch}
@@ -277,13 +267,12 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
                 accept="image/*" 
                 onChange={handleImageAutoFill}
                 disabled={isSearching || isAnalyzingImage}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 peer"
-                aria-label="Upload de foto para identificação"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
              />
-             <div className="w-full flex items-center justify-center gap-2 bg-white border border-emerald-200 text-emerald-700 py-2 rounded-lg hover:bg-emerald-100 transition-colors font-medium text-sm peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-500 peer-focus-visible:ring-offset-2">
+             <button className="w-full flex items-center justify-center gap-2 bg-white border border-emerald-200 text-emerald-700 py-2 rounded-lg hover:bg-emerald-100 transition-colors font-medium text-sm">
                 {isAnalyzingImage ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
                 {isAnalyzingImage ? "Analisando Imagem..." : "Tirar Foto / Galeria"}
-             </div>
+             </button>
            </div>
         </div>
         
@@ -298,36 +287,31 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
 
       <div className="space-y-3">
         <div>
-          <label htmlFor={`${formId}-commonName`} className="block text-xs font-bold uppercase text-slate-500 mb-1">Nome Popular</label>
+          <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Nome Popular</label>
           <input 
-            id={`${formId}-commonName`}
             className="w-full p-2 border border-slate-200 rounded-lg"
             value={formData.commonName || ''}
             onChange={e => handleChange('commonName', e.target.value)}
             placeholder="ex: Espada de São Jorge"
-            maxLength={50}
           />
         </div>
         
         <div>
-          <label htmlFor={`${formId}-scientificName`} className="block text-xs font-bold uppercase text-slate-500 mb-1">Nome Científico</label>
+          <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Nome Científico</label>
           <input 
-            id={`${formId}-scientificName`}
             className="w-full p-2 border border-slate-200 rounded-lg italic"
             value={formData.scientificName || ''}
             onChange={e => handleChange('scientificName', e.target.value)}
             placeholder="ex: Sansevieria trifasciata"
-            maxLength={100}
           />
         </div>
 
         {/* Category Selection Field */}
         <div>
-           <label htmlFor={`${formId}-category`} className="block text-xs font-bold uppercase text-slate-500 mb-1">Categoria</label>
+           <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Categoria</label>
            
            {!isCustomCategory ? (
              <select 
-               id={`${formId}-category`}
                className="w-full p-2 border border-slate-200 rounded-lg bg-white"
                value={CATEGORIES.includes(formData.category || "") ? formData.category : (formData.category ? "custom" : "")}
                onChange={(e) => {
@@ -349,13 +333,11 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
            ) : (
              <div className="flex gap-2 animate-[fadeIn_0.2s_ease-out]">
                <input 
-                 id={`${formId}-category`}
                  className="flex-1 p-2 border border-slate-200 rounded-lg"
                  placeholder="Digite a categoria (ex: Orquídea)..."
                  value={formData.category || ''}
                  onChange={(e) => handleChange('category', e.target.value)}
                  autoFocus
-                 maxLength={30} // Prevent DoS/Storage exhaustion
                />
                <button 
                  onClick={() => {
@@ -377,12 +359,10 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor={`${formId}-frequency`} className="block text-xs font-bold uppercase text-slate-500 mb-1">Frequência de Rega (Dias)</label>
+            <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Frequência de Rega (Dias)</label>
             <input 
-              id={`${formId}-frequency`}
               type="number"
               min="1"
-              max="365"
               placeholder="Ex: 7"
               className="w-full p-2 border border-slate-200 rounded-lg"
               value={formData.wateringFrequencyDays || ''}
@@ -390,9 +370,8 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
             />
           </div>
           <div>
-             <label htmlFor={`${formId}-sun`} className="block text-xs font-bold uppercase text-slate-500 mb-1">Sol</label>
+             <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Sol</label>
              <select 
-               id={`${formId}-sun`}
                className="w-full p-2 border border-slate-200 rounded-lg bg-white"
                value={formData.sunTolerance || SunTolerance.PARTIAL}
                onChange={e => handleChange('sunTolerance', e.target.value)}
@@ -406,12 +385,12 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
 
         <div className="grid grid-cols-2 gap-3">
            <div>
-             <label htmlFor={`${formId}-minTemp`} className="block text-xs font-bold uppercase text-slate-500 mb-1">Min Temp (°C)</label>
-             <input id={`${formId}-minTemp`} type="number" min="-50" max="60" className="w-full p-2 border border-slate-200 rounded-lg" value={formData.minTemp || 0} onChange={e => handleChange('minTemp', parseInt(e.target.value))} />
+             <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Min Temp (°C)</label>
+             <input type="number" className="w-full p-2 border border-slate-200 rounded-lg" value={formData.minTemp || 0} onChange={e => handleChange('minTemp', parseInt(e.target.value))} />
            </div>
            <div>
-             <label htmlFor={`${formId}-maxTemp`} className="block text-xs font-bold uppercase text-slate-500 mb-1">Máx Temp (°C)</label>
-             <input id={`${formId}-maxTemp`} type="number" min="-50" max="60" className="w-full p-2 border border-slate-200 rounded-lg" value={formData.maxTemp || 35} onChange={e => handleChange('maxTemp', parseInt(e.target.value))} />
+             <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Máx Temp (°C)</label>
+             <input type="number" className="w-full p-2 border border-slate-200 rounded-lg" value={formData.maxTemp || 35} onChange={e => handleChange('maxTemp', parseInt(e.target.value))} />
            </div>
         </div>
       </div>
@@ -431,3 +410,4 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
     </div>
   );
 };
+    

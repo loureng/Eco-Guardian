@@ -1,10 +1,10 @@
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserProfile, Plant, UserLocation, WeatherData, SunTolerance, Achievement, DwellingType } from './types';
 import { loadUser, saveUser } from './services/storageService';
 import { identifyPlant, getPlantDetailsByName, generatePlantImage } from './services/geminiService';
 import { fetchLocalWeather } from './services/weatherService';
-import { getAggregateAlerts, analyzeWeatherFactors } from './services/plantLogic';
+import { getAggregateAlerts } from './services/plantLogic';
 import { requestNotificationPermission, processAlertsForNotifications } from './services/notificationService';
 import { checkNewAchievements, ACHIEVEMENTS } from './services/gamificationService';
 import { DEFAULT_PLANT_IMAGE } from './constants';
@@ -13,39 +13,18 @@ import { Button } from './components/Button';
 import { PlantCard } from './components/PlantCard';
 import { WeatherWidget } from './components/WeatherWidget';
 import { DashboardSummary } from './components/DashboardSummary';
+import { AgendaView } from './components/AgendaView';
+import { PlantForm } from './components/PlantForm';
 import { ErrorNotification } from './components/ErrorNotification';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { AchievementPopup } from './components/AchievementPopup';
+import { StatisticsSection } from './components/StatisticsSection';
 import { CalendarModal } from './components/CalendarModal';
+import { Chatbot } from './components/Chatbot';
 import { 
-  Plus, Leaf, Camera, RefreshCw, Search, Sprout, Trees, Trophy, Lock,
-  Menu, X, LogOut, ChevronRight, CalendarDays, Home, Building,
-  Flower2, Droplets
+  Plus, Leaf, Camera, RefreshCw, Search, Sprout, Trees, Flower2, Droplets, Trophy, Lock, 
+  Menu, X, LogOut, ChevronRight, CalendarDays, Home, Building
 } from 'lucide-react';
-
-// Lazy load heavy components
-const AgendaView = React.lazy(() => import('./components/AgendaView').then(module => ({ default: module.AgendaView })));
-const PlantForm = React.lazy(() => import('./components/PlantForm').then(module => ({ default: module.PlantForm })));
-const StatisticsSection = React.lazy(() => import('./components/StatisticsSection').then(module => ({ default: module.StatisticsSection })));
-const Chatbot = React.lazy(() => import('./components/Chatbot').then(module => ({ default: module.Chatbot })));
-
-const LoadingFallback = () => (
-  <div className="flex justify-center items-center p-12 w-full h-full min-h-[200px]">
-    <RefreshCw className="w-8 h-8 text-emerald-500 animate-spin" />
-  </div>
-);
-
-// Helper for icons mapping in profile
-// ⚡ Bolt Optimization: Moved outside component to prevent re-creation on every render
-const getBadgeIcon = (name: string, size: number = 20) => {
-  switch (name) {
-    case 'Sprout': return <Sprout size={size} />;
-    case 'Trees': return <Trees size={size} />;
-    case 'Flower2': return <Flower2 size={size} />;
-    case 'Droplets': return <Droplets size={size} />;
-    default: return <Trophy size={size} />;
-  }
-};
 
 const App: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -80,32 +59,20 @@ const App: React.FC = () => {
   const [selectedDwelling, setSelectedDwelling] = useState<DwellingType>('Apartamento');
 
   // Helper to trigger errors
-  const triggerError = useCallback((msg: string) => {
+  const triggerError = (msg: string) => {
     setErrorMessage(msg);
-  }, []);
+  };
 
-  // ⚡ Bolt Optimization: Calculate weather factors once for all plants
-  const weatherFactors = useMemo(() =>
-    weather ? analyzeWeatherFactors(weather) : undefined
-  , [weather]);
-
-  const refreshWeather = useCallback(async (loc: UserLocation | null, plants?: Plant[]) => {
-    if (!loc) return;
-    setWeatherLoading(true);
-    try {
-      const data = await fetchLocalWeather(loc);
-      setWeather(data);
-      if (plants && plants.length > 0) {
-        const alerts = getAggregateAlerts(plants, data);
-        if (alerts.length > 0) processAlertsForNotifications(alerts);
-      }
-    } catch (e) {
-      console.error(e);
-      triggerError("Não foi possível atualizar o clima. Verifique sua conexão.");
-    } finally {
-      setWeatherLoading(false);
+  // Helper for icons mapping in profile
+  const getBadgeIcon = (name: string, size: number = 20) => {
+    switch (name) {
+      case 'Sprout': return <Sprout size={size} />;
+      case 'Trees': return <Trees size={size} />;
+      case 'Flower2': return <Flower2 size={size} />;
+      case 'Droplets': return <Droplets size={size} />;
+      default: return <Trophy size={size} />;
     }
-  }, [triggerError]);
+  };
 
   // Initialize App
   useEffect(() => {
@@ -124,37 +91,42 @@ const App: React.FC = () => {
       refreshWeather(storedUser.location, storedUser.plants);
       requestNotificationPermission(); 
     }
-  }, [refreshWeather]);
-
-  // Keep a ref to user for stable callbacks
-  const userRef = useRef(user);
-  useEffect(() => {
-    userRef.current = user;
-  }, [user]);
+  }, []);
 
   // Save user changes
   useEffect(() => {
     if (user) saveUser(user);
   }, [user]);
 
-  const resetAddPlant = useCallback(() => {
-    setCapturedImage(null);
-    setPlantFormData(null);
-    setIsManualEntry(false);
-    setSearchName("");
-  }, []);
+  const refreshWeather = async (loc: UserLocation | null, plants?: Plant[]) => {
+    if (!loc) return;
+    setWeatherLoading(true);
+    try {
+      const data = await fetchLocalWeather(loc);
+      setWeather(data);
+      if (plants && plants.length > 0) {
+        const alerts = getAggregateAlerts(plants, data);
+        if (alerts.length > 0) processAlertsForNotifications(alerts);
+      }
+    } catch (e) {
+      console.error(e);
+      triggerError("Não foi possível atualizar o clima. Verifique sua conexão.");
+    } finally {
+      setWeatherLoading(false);
+    }
+  };
 
   // Navigation Helper
-  const navigateTo = useCallback((target: 'welcome' | 'dashboard' | 'agenda' | 'add-plant' | 'profile') => {
+  const navigateTo = (target: 'welcome' | 'dashboard' | 'agenda' | 'add-plant' | 'profile') => {
     setView(target);
     setIsMenuOpen(false);
     if (target === 'add-plant') resetAddPlant();
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [resetAddPlant]);
+  };
 
   // --- Logic Functions (Login, Image, etc) ---
   
-  const handleLogin = useCallback(() => {
+  const handleLogin = () => {
     if (!navigator.geolocation) {
       triggerError("Seu navegador não suporta ou bloqueou a geolocalização.");
       return;
@@ -177,15 +149,9 @@ const App: React.FC = () => {
       (error) => { console.error(error); triggerError("Erro ao obter localização. Habilite o GPS."); },
       { timeout: 10000 }
     );
-  }, [selectedDwelling, refreshWeather, triggerError]);
+  };
 
-  const handleManualFallback = useCallback(() => {
-    setPlantFormData({ commonName: "", scientificName: "", wateringFrequencyDays: 7, sunTolerance: SunTolerance.PARTIAL, minTemp: 10, maxTemp: 30 });
-    if (!capturedImage) setCapturedImage(DEFAULT_PLANT_IMAGE);
-    setIsManualEntry(true);
-  }, [capturedImage]);
-
-  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) { triggerError("Imagem muito grande."); return; }
@@ -205,9 +171,9 @@ const App: React.FC = () => {
       } finally { setIsAnalyzing(false); }
     };
     reader.readAsDataURL(file);
-  }, [handleManualFallback, triggerError]);
+  };
 
-  const handleNameSearch = useCallback(async () => {
+  const handleNameSearch = async () => {
     if (!searchName.trim()) return;
     setIsAnalyzing(true);
     setCapturedImage(null);
@@ -224,16 +190,21 @@ const App: React.FC = () => {
       triggerError("IA indisponível. Preencha manual.");
       handleManualFallback();
     } finally { setIsAnalyzing(false); }
-  }, [searchName, handleManualFallback, triggerError]);
+  };
 
-  const handleManualEntryStart = useCallback(() => {
+  const handleManualFallback = () => {
+    setPlantFormData({ commonName: "", scientificName: "", wateringFrequencyDays: 7, sunTolerance: SunTolerance.PARTIAL, minTemp: 10, maxTemp: 30 });
+    if (!capturedImage) setCapturedImage(DEFAULT_PLANT_IMAGE);
+    setIsManualEntry(true);
+  };
+
+  const handleManualEntryStart = () => {
     setCapturedImage(DEFAULT_PLANT_IMAGE);
     handleManualFallback();
-  }, [handleManualFallback]);
+  };
 
-  const handleSavePlant = useCallback((data: Partial<Plant>) => {
-    const currentUser = userRef.current;
-    if (!currentUser) return;
+  const handleSavePlant = (data: Partial<Plant>) => {
+    if (!user) return;
     if (!data.commonName || data.commonName.trim() === "") { triggerError("Nome obrigatório."); return; }
     
     // Check if the form returned a specific image (e.g., user re-took photo in form),
@@ -261,8 +232,8 @@ const App: React.FC = () => {
       environmentTips: data.environmentTips
     };
     
-    const updatedPlants = [finalPlant, ...currentUser.plants];
-    const updatedUser = { ...currentUser, plants: updatedPlants };
+    const updatedPlants = [finalPlant, ...user.plants];
+    const updatedUser = { ...user, plants: updatedPlants };
     
     const unlocked = checkNewAchievements(updatedUser, 'PLANT_ADDED');
     if (unlocked.length > 0) {
@@ -276,37 +247,42 @@ const App: React.FC = () => {
     setIsManualEntry(false);
     setSearchName("");
     setView('dashboard');
-    refreshWeather(currentUser.location, updatedPlants);
-  }, [capturedImage, refreshWeather, triggerError]);
+    refreshWeather(user.location, updatedPlants);
+  };
 
-  const handleWater = useCallback((id: string) => {
-    const currentUser = userRef.current;
-    if(!currentUser) return;
+  const handleWater = (id: string) => {
+    if(!user) return;
     const now = Date.now();
-    const updatedPlants = currentUser.plants.map(p => p.id === id ? { ...p, lastWatered: now, wateringHistory: [...(p.wateringHistory || []), now] } : p);
-    const updatedUser = { ...currentUser, plants: updatedPlants };
+    const updatedPlants = user.plants.map(p => p.id === id ? { ...p, lastWatered: now, wateringHistory: [...(p.wateringHistory || []), now] } : p);
+    const updatedUser = { ...user, plants: updatedPlants };
     const unlocked = checkNewAchievements(updatedUser, 'WATERED');
     if (unlocked.length > 0) {
       updatedUser.unlockedAchievements = [...(updatedUser.unlockedAchievements || []), ...unlocked.map(a => a.id)];
       setNewAchievement(unlocked[0]);
     }
     setUser(updatedUser);
-  }, []); // Stable callback!
+  };
 
-  const handleDeleteRequest = useCallback((id: string) => setPlantToDelete(id), []);
+  const handleDeleteRequest = (id: string) => setPlantToDelete(id);
   
-  const confirmDelete = useCallback(() => {
-    const currentUser = userRef.current;
-    if (!currentUser || !plantToDelete) return;
-    const updatedPlants = currentUser.plants.filter(p => p.id !== plantToDelete);
-    setUser({ ...currentUser, plants: updatedPlants });
+  const confirmDelete = () => {
+    if (!user || !plantToDelete) return;
+    const updatedPlants = user.plants.filter(p => p.id !== plantToDelete);
+    setUser({ ...user, plants: updatedPlants });
     setPlantToDelete(null);
-  }, [plantToDelete]);
+  };
 
-  const handleScheduleRequest = useCallback((plant: Plant, date: Date) => {
+  const handleScheduleRequest = (plant: Plant, date: Date) => {
     setPlantToSchedule({ plant, date });
     setCalendarModalOpen(true);
-  }, []);
+  };
+
+  const resetAddPlant = () => {
+    setCapturedImage(null);
+    setPlantFormData(null);
+    setIsManualEntry(false);
+    setSearchName("");
+  };
 
   // --- Render ---
 
@@ -365,11 +341,7 @@ const App: React.FC = () => {
       />
 
       {/* Global Chatbot */}
-      {user && (
-        <React.Suspense fallback={null}>
-          <Chatbot user={user} />
-        </React.Suspense>
-      )}
+      {user && <Chatbot user={user} />}
 
       {/* WEB HEADER (Site Navigation) */}
       <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">
@@ -393,7 +365,6 @@ const App: React.FC = () => {
                 onClick={() => refreshWeather(user?.location || null, user?.plants)} 
                 className="p-2 text-slate-500 hover:text-emerald-600 hover:bg-slate-50 rounded-full transition-all"
                 title="Atualizar Clima"
-                aria-label="Atualizar Clima"
               >
                 <RefreshCw size={20} className={weatherLoading ? "animate-spin text-emerald-600" : ""} />
               </button>
@@ -403,7 +374,6 @@ const App: React.FC = () => {
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className={`p-2 rounded-lg transition-colors ${isMenuOpen ? 'bg-slate-100 text-slate-800' : 'text-slate-600 hover:bg-slate-50'}`}
               aria-label="Menu"
-              aria-expanded={isMenuOpen}
             >
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -483,7 +453,7 @@ const App: React.FC = () => {
             <WeatherWidget weather={weather} isLoading={weatherLoading} />
             
             {user && (
-              <DashboardSummary plants={user.plants} weather={weather} weatherFactors={weatherFactors} />
+              <DashboardSummary plants={user.plants} weather={weather} />
             )}
 
             <div>
@@ -512,8 +482,7 @@ const App: React.FC = () => {
                     <PlantCard 
                       key={plant.id} 
                       plant={plant} 
-                      weather={weather}
-                      weatherFactors={weatherFactors}
+                      weather={weather} 
                       onWater={handleWater} 
                       onDelete={handleDeleteRequest}
                       onSchedule={handleScheduleRequest}
@@ -538,23 +507,20 @@ const App: React.FC = () => {
 
         {/* Nova View: Agenda */}
         {view === 'agenda' && (
-           <React.Suspense fallback={<LoadingFallback />}>
-             <AgendaView
-               plants={user?.plants || []}
-               weather={weather}
-               weatherFactors={weatherFactors}
-               onWater={handleWater}
-               onSchedule={handleScheduleRequest}
-             />
-           </React.Suspense>
+           <AgendaView 
+             plants={user?.plants || []} 
+             weather={weather}
+             onWater={handleWater}
+             onSchedule={handleScheduleRequest}
+           />
         )}
 
         {view === 'add-plant' && (
           <div className="animate-[fadeIn_0.3s_ease-out]">
             <div className="mb-6 flex items-center gap-2 text-sm text-slate-500">
-               <button type="button" onClick={() => navigateTo('dashboard')} className="hover:text-emerald-600 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded px-1">Home</button>
-               <ChevronRight size={14} aria-hidden="true" />
-               <span className="font-bold text-slate-800 px-1">Nova Planta</span>
+               <span onClick={() => navigateTo('dashboard')} className="cursor-pointer hover:text-emerald-600">Home</span>
+               <ChevronRight size={14} />
+               <span className="font-bold text-slate-800">Nova Planta</span>
             </div>
 
             <h1 className="text-2xl font-bold text-slate-800 mb-6">Cadastrar Planta</h1>
@@ -626,15 +592,13 @@ const App: React.FC = () => {
                      </p>
                    </div>
                 ) : plantFormData ? (
-                   <React.Suspense fallback={<LoadingFallback />}>
-                     <PlantForm
-                       initialData={plantFormData}
-                       imageUrl={capturedImage}
-                       onSave={handleSavePlant}
-                       onCancel={resetAddPlant}
-                       isManualEntry={isManualEntry}
-                     />
-                   </React.Suspense>
+                   <PlantForm 
+                     initialData={plantFormData}
+                     imageUrl={capturedImage}
+                     onSave={handleSavePlant}
+                     onCancel={resetAddPlant}
+                     isManualEntry={isManualEntry}
+                   />
                 ) : null}
               </div>
             )}
@@ -644,9 +608,9 @@ const App: React.FC = () => {
         {view === 'profile' && (
           <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
             <div className="mb-4 flex items-center gap-2 text-sm text-slate-500">
-               <button type="button" onClick={() => navigateTo('dashboard')} className="hover:text-emerald-600 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded px-1">Home</button>
-               <ChevronRight size={14} aria-hidden="true" />
-               <span className="font-bold text-slate-800 px-1">Perfil</span>
+               <span onClick={() => navigateTo('dashboard')} className="cursor-pointer hover:text-emerald-600">Home</span>
+               <ChevronRight size={14} />
+               <span className="font-bold text-slate-800">Perfil</span>
             </div>
 
             <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 text-center relative overflow-hidden">
@@ -675,9 +639,7 @@ const App: React.FC = () => {
             {user && (
               <div>
                 <h3 className="font-bold text-lg text-slate-800 mb-4 px-1">Estatísticas</h3>
-                <React.Suspense fallback={<LoadingFallback />}>
-                  <StatisticsSection plants={user.plants} weather={weather} weatherFactors={weatherFactors} />
-                </React.Suspense>
+                <StatisticsSection plants={user.plants} weather={weather} />
               </div>
             )}
 

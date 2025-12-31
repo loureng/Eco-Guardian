@@ -1,54 +1,30 @@
-import { ChevronDown, BookOpen, Globe, Sparkles, BarChart3 } from 'lucide-react';
 
 import React, { useMemo, useState } from 'react';
 import { Plant, WeatherData } from '../types';
-import { WeatherFactors } from '../services/plantLogic';
 import { 
-  Droplets, Thermometer, Sun, Trash2, CalendarClock,
-  TrendingUp, TrendingDown, CheckCircle2, CalendarPlus,
+  Droplets, Thermometer, Sun, AlertTriangle, Trash2, CalendarClock, 
+  TrendingUp, TrendingDown, CheckCircle2, Info, CalendarPlus,
+  ChevronDown, ChevronUp, Tag, BarChart3, Globe, Sparkles, BookOpen,
   Wind, Sprout, Layers
 } from 'lucide-react';
 import { checkPlantHealth, calculateSmartWatering } from '../services/plantLogic';
-import { DATE_FORMATTER } from '../services/formatters';
 
 interface Props {
   plant: Plant;
   weather: WeatherData | null;
-  weatherFactors?: WeatherFactors;
   onWater: (id: string) => void;
   onDelete: (id: string) => void;
   onSchedule: (plant: Plant, date: Date) => void;
 }
 
-const getAlertStyle = (type: string) => {
-  switch (type) {
-    case 'danger': return 'bg-red-50 text-red-700 border-red-100';
-    case 'warning': return 'bg-amber-50 text-amber-700 border-amber-100';
-    case 'info': return 'bg-blue-50 text-blue-700 border-blue-100';
-    case 'success': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-    default: return 'bg-slate-50 text-slate-700 border-slate-100';
-  }
-};
-
-const getAlertIcon = (type: string) => {
-  switch (type) {
-    case 'danger': return <AlertTriangle size={16} />;
-    case 'warning': return <AlertTriangle size={16} />;
-    case 'info': return <Info size={16} />;
-    case 'success': return <CheckCircle2 size={16} />;
-    default: return <Info size={16} />;
-  }
-};
-
-const PlantCardComponent: React.FC<Props> = ({ plant, weather, weatherFactors, onWater, onDelete, onSchedule }) => {
+export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, onSchedule }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
   // Real-time Logic Calculation (Daily Review)
-  // ⚡ Bolt Optimization: Memoize alerts to prevent recalculation on internal state changes (like expanding the card)
-  const activeAlerts = useMemo(() => checkPlantHealth(plant, weather), [plant, weather]);
+  const activeAlerts = checkPlantHealth(plant, weather);
   
   // Calculate Smart Schedule based on full meteorology
-  const schedule = useMemo(() => calculateSmartWatering(plant, weather, weatherFactors), [plant, weather, weatherFactors]);
+  const schedule = useMemo(() => calculateSmartWatering(plant, weather), [plant, weather]);
 
   const isUrgent = schedule.daysRemaining <= 0;
   const isToday = schedule.daysRemaining === 0;
@@ -72,8 +48,7 @@ const PlantCardComponent: React.FC<Props> = ({ plant, weather, weatherFactors, o
     });
 
     // Add Future Prediction
-    const now = new Date().getTime();
-    const lastWatered = recentHistory.length > 0 ? recentHistory[recentHistory.length - 1] : now;
+    const lastWatered = recentHistory.length > 0 ? recentHistory[recentHistory.length - 1] : Date.now();
     // Calculate days from last watered to scheduled date
     const daysToNext = Math.max(1, Math.ceil((schedule.nextDate.getTime() - lastWatered) / (1000 * 60 * 60 * 24)));
     
@@ -93,25 +68,32 @@ const PlantCardComponent: React.FC<Props> = ({ plant, weather, weatherFactors, o
     10 
   );
 
+  const getAlertStyle = (type: string) => {
+    switch(type) {
+      case 'danger': return 'bg-red-50 text-red-700 border-red-100';
+      case 'warning': return 'bg-amber-50 text-amber-700 border-amber-100';
+      case 'success': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+      default: return 'bg-blue-50 text-blue-700 border-blue-100';
+    }
+  };
+
+  const getAlertIcon = (type: string) => {
+    switch(type) {
+      case 'danger': return <AlertTriangle size={14} />;
+      case 'success': return <CheckCircle2 size={14} />;
+      default: return <Info size={14} />;
+    }
+  };
+
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-md transition-shadow group relative">
       {/* Header Image Area - Clickable */}
-      <div className="relative h-40 bg-slate-100 group/image">
-        <button
-          type="button"
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="absolute inset-0 w-full h-full p-0 border-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 z-0"
-          aria-expanded={isExpanded}
-          aria-label={isExpanded ? `Recolher detalhes de ${plant.commonName}` : `Expandir detalhes de ${plant.commonName}`}
-        >
-          <img
-            src={plant.imageUrl || "https://picsum.photos/400/300"}
-            alt={plant.commonName}
-            loading="lazy"
-            decoding="async"
-            className="w-full h-full object-cover transition-transform duration-700 group-hover/image:scale-105"
-          />
-        </button>
+      <div className="relative h-40 bg-slate-100 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
+        <img 
+          src={plant.imageUrl || "https://picsum.photos/400/300"} 
+          alt={plant.commonName} 
+          className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+        />
         
         {/* Delete Button */}
         <button 
@@ -119,16 +101,15 @@ const PlantCardComponent: React.FC<Props> = ({ plant, weather, weatherFactors, o
             e.stopPropagation();
             onDelete(plant.id);
           }}
-          className="absolute top-2 left-2 w-8 h-8 bg-white/90 text-slate-600 hover:bg-red-500 hover:text-white shadow-sm backdrop-blur-sm rounded-full flex items-center justify-center transition-colors z-10"
+          className="absolute top-2 left-2 w-8 h-8 bg-black/20 hover:bg-red-500 backdrop-blur-sm rounded-full text-white flex items-center justify-center transition-colors z-10"
           title="Excluir planta"
-          aria-label={`Excluir ${plant.commonName}`}
         >
           <Trash2 size={14} />
         </button>
 
         {/* Badge de Próxima Ação */}
-        <div className={`absolute bottom-2 right-2 px-3 py-1 rounded-full text-xs font-bold shadow-sm flex items-center gap-1 backdrop-blur-md z-0 pointer-events-none
-          ${isUrgent ? 'bg-white/90 text-emerald-700' : 'bg-slate-900/70 text-white'}`}>
+        <div className={`absolute bottom-2 right-2 px-3 py-1 rounded-full text-xs font-bold shadow-sm flex items-center gap-1 backdrop-blur-md
+          ${isUrgent ? 'bg-white/90 text-emerald-700' : 'bg-black/40 text-white'}`}>
           <CalendarClock size={12} />
           {isToday ? 'Regar Hoje' : schedule.daysRemaining < 0 ? 'Atrasada' : `${schedule.daysRemaining} dias`}
         </div>
@@ -136,12 +117,9 @@ const PlantCardComponent: React.FC<Props> = ({ plant, weather, weatherFactors, o
       
       <div className="p-4">
         {/* Title Row - Clickable */}
-        <button
-          type="button"
-          className="w-full flex justify-between items-start mb-1 cursor-pointer select-none text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-lg"
+        <div 
+          className="flex justify-between items-start mb-1 cursor-pointer select-none"
           onClick={() => setIsExpanded(!isExpanded)}
-          aria-expanded={isExpanded}
-          aria-label={isExpanded ? "Recolher detalhes" : "Expandir detalhes"}
         >
           <div>
             <h3 className="font-bold text-slate-900 text-lg leading-tight">{plant.commonName}</h3>
@@ -150,7 +128,7 @@ const PlantCardComponent: React.FC<Props> = ({ plant, weather, weatherFactors, o
           <div className={`text-slate-400 p-1 hover:bg-slate-50 rounded-full transition-all duration-300 ${isExpanded ? 'rotate-180 bg-slate-50' : ''}`}>
             <ChevronDown size={20} />
           </div>
-        </button>
+        </div>
 
         {/* Daily Review Section (Alerts) */}
         {activeAlerts.length > 0 ? (
@@ -294,15 +272,9 @@ const PlantCardComponent: React.FC<Props> = ({ plant, weather, weatherFactors, o
                          const isFuture = item.type === 'future';
                          
                          return (
-                           <div
-                             key={i}
-                             tabIndex={0}
-                             role="img"
-                             aria-label={`${isFuture ? 'Previsão para' : 'Regado em'} ${DATE_FORMATTER.format(item.date)}. Intervalo de ${item.days} dias.`}
-                             className="flex-1 flex flex-col items-center justify-end h-full gap-1 group relative focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-sm cursor-help"
-                           >
+                           <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-1 group relative">
                               {/* Floating Tooltip */}
-                              <div className="absolute -top-8 opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 group-focus:translate-y-0 bg-slate-800 text-white text-[10px] font-bold py-1 px-2 rounded shadow-lg z-20 whitespace-nowrap pointer-events-none">
+                              <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 bg-slate-800 text-white text-[10px] font-bold py-1 px-2 rounded shadow-lg z-20 whitespace-nowrap pointer-events-none">
                                 {item.days} dias
                                 <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
                               </div>
@@ -339,16 +311,15 @@ const PlantCardComponent: React.FC<Props> = ({ plant, weather, weatherFactors, o
            <div className="flex flex-col">
              <span className="font-medium text-slate-700">Próxima Rega</span>
              <span className="flex items-center gap-1">
-               {DATE_FORMATTER.format(schedule.nextDate)}
+               {new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' }).format(schedule.nextDate)}
                
                <button 
                  onClick={(e) => {
                    e.stopPropagation();
                    onSchedule(plant, schedule.nextDate);
                  }}
-                 className="ml-1 p-2 hover:bg-emerald-50 text-emerald-600 rounded-md transition-colors"
+                 className="ml-1 p-1 hover:bg-emerald-50 text-emerald-600 rounded-md transition-colors"
                  title="Adicionar ao Calendário"
-                 aria-label="Adicionar rega ao calendário"
                >
                  <CalendarPlus size={14} />
                </button>
@@ -386,5 +357,3 @@ const PlantCardComponent: React.FC<Props> = ({ plant, weather, weatherFactors, o
     </div>
   );
 };
-
-export const PlantCard = React.memo(PlantCardComponent);
