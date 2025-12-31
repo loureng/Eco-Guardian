@@ -79,12 +79,18 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
 
     } catch (error: any) {
       console.error("Erro na busca:", error);
-      // Tratamento específico para JSON inválido
-      if (error instanceof SyntaxError || error.message?.includes('JSON')) {
-        setSearchError("A IA retornou dados incompletos ou inválidos. Tente reformular o nome da planta.");
-      } else {
-        setSearchError("Não conseguimos processar essa planta. Verifique sua conexão ou preencha manualmente.");
+      // Fix: Ensure error is a string to avoid [object Object]
+      let errorMessage = "Não conseguimos processar essa planta. Verifique sua conexão ou preencha manualmente.";
+      
+      if (error instanceof SyntaxError || (error.message && error.message.includes('JSON'))) {
+        errorMessage = "A IA retornou dados incompletos. Tente reformular o nome da planta.";
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error.message) {
+        errorMessage = error.message;
       }
+
+      setSearchError(errorMessage);
     } finally {
       setIsSearching(false);
     }
@@ -118,12 +124,19 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
         }
       } catch (error: any) {
         console.error("Erro ao identificar imagem no form:", error);
-        // Tratamento específico para JSON inválido
-        if (error instanceof SyntaxError || error.message?.includes('JSON')) {
-           setSearchError("A imagem não gerou dados legíveis. Tente uma foto mais clara, focada e bem iluminada.");
-        } else {
-           setSearchError("Não foi possível identificar a planta. Tente novamente ou use a busca por nome.");
+        
+        // Fix: Ensure error is a string
+        let errorMessage = "Não foi possível identificar a planta. Tente novamente ou use a busca por nome.";
+        
+        if (error instanceof SyntaxError || (error.message && error.message.includes('JSON'))) {
+           errorMessage = "A imagem não gerou dados legíveis. Tente uma foto mais clara e focada.";
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        } else if (error.message) {
+          errorMessage = error.message;
         }
+
+        setSearchError(errorMessage);
       } finally {
         setIsAnalyzingImage(false);
       }
@@ -393,6 +406,17 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
              <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Máx Temp (°C)</label>
              <input type="number" className="w-full p-2 border border-slate-200 rounded-lg" value={formData.maxTemp || 35} onChange={e => handleChange('maxTemp', parseInt(e.target.value))} />
            </div>
+        </div>
+
+        {/* New Field: Environment Tips */}
+        <div>
+          <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Dicas de Ambiente (Ventilação/Chuva)</label>
+          <input 
+            className="w-full p-2 border border-slate-200 rounded-lg"
+            value={formData.environmentTips || ''}
+            onChange={e => handleChange('environmentTips', e.target.value)}
+            placeholder="Ex: Local arejado, evitar chuva direta..."
+          />
         </div>
       </div>
 

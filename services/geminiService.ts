@@ -151,11 +151,12 @@ export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant
 export const generatePlantImage = async (plantName: string): Promise<string | null> => {
   try {
     const ai = getGeminiClient();
-    // Prompt atualizado para focar no habitat natural e estética "National Geographic"
-    const prompt = `A cinematic, photorealistic close-up shot of a ${plantName} plant.
-    Focus on the plant's texture and leaves details.
-    Background: A beautiful, slightly blurred (bokeh) representation of its natural origin or habitat (like a rainforest, desert, misty mountains, or tropical garden) to provide depth and atmosphere.
-    Lighting: Soft natural light, golden hour, high contrast, 4k resolution, highly detailed texture, aesthetic photography.`;
+    // Prompt atualizado para focar ESTRITAMENTE na planta e aplicar o efeito de fundo bokeh
+    const prompt = `A cinematic, photorealistic botanical shot of the plant: ${plantName}.
+    CRITICAL: This is a PLANT. Focus entirely on the foliage and unique characteristics of the species. DO NOT SHOW ANIMALS.
+    Composition: A clear, centered close-up view of the plant.
+    Background: A soft, blurred (bokeh) environment reflecting its natural origin (e.g., tropical rainforest, desert, mountains). The background should be atmospheric and opaque to highlight the plant.
+    Lighting: Soft natural light, golden hour, high contrast, 4k resolution.`;
 
     const response = await ai.models.generateImages({
       model: 'imagen-4.0-generate-001',

@@ -179,10 +179,16 @@ const App: React.FC = () => {
     setCapturedImage(null);
     setIsManualEntry(false);
     try {
-      const [details, generatedImage] = await Promise.all([
-        getPlantDetailsByName(searchName),
-        generatePlantImage(searchName)
-      ]);
+      // 1. Primeiro obtemos os detalhes técnicos da planta (para descobrir o nome científico)
+      const details = await getPlantDetailsByName(searchName);
+      
+      // 2. Usamos o nome científico para gerar a imagem. Isso evita ambiguidades (ex: Jiboia cobra vs Jiboia planta)
+      const nameForImage = details.scientificName 
+        ? `${details.scientificName} (${details.commonName})` 
+        : searchName;
+
+      const generatedImage = await generatePlantImage(nameForImage);
+      
       setPlantFormData(details);
       setCapturedImage(generatedImage || DEFAULT_PLANT_IMAGE);
     } catch (err) {
