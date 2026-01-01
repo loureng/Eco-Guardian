@@ -93,6 +93,12 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // ⚡ Bolt Optimization: Ref to access weather in callbacks without dependency
+  const weatherRef = useRef(weather);
+  useEffect(() => {
+    weatherRef.current = weather;
+  }, [weather]);
+
   // Save user changes
   useEffect(() => {
     if (user) saveUser(user);
