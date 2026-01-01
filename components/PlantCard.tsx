@@ -16,7 +16,7 @@ interface Props {
   onSchedule: (plant: Plant, date: Date) => void;
 }
 
-export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, onSchedule }) => {
+export const PlantCard: React.FC<Props> = React.memo(({ plant, weather, onWater, onDelete, onSchedule }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
   // Real-time Logic Calculation (Daily Review)
@@ -355,4 +355,4 @@ export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, 
       `}</style>
     </div>
   );
-};
+});

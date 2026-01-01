@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { UserProfile, Plant, UserLocation, WeatherData, SunTolerance, Achievement, DwellingType } from './types';
 import { loadUser, saveUser } from './services/storageService';
 import { identifyPlant, getPlantDetailsByName, generatePlantImage } from './services/geminiService';
@@ -256,7 +256,7 @@ const App: React.FC = () => {
     refreshWeather(user.location, updatedPlants);
   };
 
-  const handleWater = (id: string) => {
+  const handleWater = useCallback((id: string) => {
     if(!user) return;
     const now = Date.now();
     const updatedPlants = user.plants.map(p => p.id === id ? { ...p, lastWatered: now, wateringHistory: [...(p.wateringHistory || []), now] } : p);
@@ -267,9 +267,9 @@ const App: React.FC = () => {
       setNewAchievement(unlocked[0]);
     }
     setUser(updatedUser);
-  };
+  }, [user]);
 
-  const handleDeleteRequest = (id: string) => setPlantToDelete(id);
+  const handleDeleteRequest = useCallback((id: string) => setPlantToDelete(id), []);
   
   const confirmDelete = () => {
     if (!user || !plantToDelete) return;
@@ -278,10 +278,10 @@ const App: React.FC = () => {
     setPlantToDelete(null);
   };
 
-  const handleScheduleRequest = (plant: Plant, date: Date) => {
+  const handleScheduleRequest = useCallback((plant: Plant, date: Date) => {
     setPlantToSchedule({ plant, date });
     setCalendarModalOpen(true);
-  };
+  }, []);
 
   const resetAddPlant = () => {
     setCapturedImage(null);
