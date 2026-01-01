@@ -3,6 +3,7 @@ import { Plant, SunTolerance } from '../types';
 import { Button } from './Button';
 import { Edit2, Check, Search, Loader2, AlertCircle, Camera, X, Wind, Layers, Sprout } from 'lucide-react';
 import { getPlantDetailsByName, identifyPlant } from '../services/geminiService';
+import { sanitizeInput } from '../services/security/security';
 
 interface Props {
   initialData: Partial<Plant>;
@@ -147,7 +148,20 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
   const handleSave = () => {
     // Garante que a imagem local (possivelmente atualizada) seja enviada
     // E garante que campos extras da AI (descrição, origem, tips, fertilizer, soil, environment) sejam passados
-    onSave({ ...formData, imageUrl: localImage });
+
+    // Sanitize user-editable string fields before saving
+    const sanitizedData = {
+        ...formData,
+        commonName: sanitizeInput(formData.commonName || ''),
+        scientificName: sanitizeInput(formData.scientificName || ''),
+        category: sanitizeInput(formData.category || ''),
+        fertilizer: sanitizeInput(formData.fertilizer || ''),
+        soil: sanitizeInput(formData.soil || ''),
+        environmentTips: sanitizeInput(formData.environmentTips || ''),
+        imageUrl: localImage
+    };
+
+    onSave(sanitizedData);
   };
 
   if (!isEditing) {

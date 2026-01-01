@@ -1,6 +1,7 @@
 import { GoogleGenAI, Type, Schema, Content } from "@google/genai";
 import { Plant, SunTolerance, ChatMessage, UserProfile } from "../types";
 import { PLANT_IDENTIFICATION_PROMPT, PLANT_DETAILS_PROMPT } from "../constants";
+import { sanitizeInput } from "./security/security";
 
 const getGeminiClient = () => {
   const apiKey = process.env.API_KEY;
@@ -35,20 +36,13 @@ const plantSchema: Schema = {
   required: ["scientificName", "commonName", "wateringFrequencyDays", "sunTolerance", "minTemp", "maxTemp"],
 };
 
-const sanitizeString = (val: any): string => {
-  if (val === null || val === undefined) return "";
-  if (typeof val === 'string') return val.trim();
-  if (typeof val === 'number') return String(val);
-  return ""; 
-};
-
 const sanitizeNumber = (val: any, defaultVal: number): number => {
   const num = Number(val);
   return isNaN(num) ? defaultVal : num;
 };
 
 const sanitizeArray = (val: any): string[] => {
-  if (Array.isArray(val)) return val.map(v => sanitizeString(v));
+  if (Array.isArray(val)) return val.map(v => sanitizeInput(v));
   return [];
 };
 
@@ -81,19 +75,19 @@ export const identifyPlant = async (base64Image: string): Promise<Partial<Plant>
     const data = JSON.parse(text);
 
     return {
-      scientificName: sanitizeString(data.scientificName),
-      commonName: sanitizeString(data.commonName),
-      category: sanitizeString(data.category) || "Geral",
-      description: sanitizeString(data.description),
-      origin: sanitizeString(data.origin),
+      scientificName: sanitizeInput(data.scientificName),
+      commonName: sanitizeInput(data.commonName),
+      category: sanitizeInput(data.category) || "Geral",
+      description: sanitizeInput(data.description),
+      origin: sanitizeInput(data.origin),
       careTips: sanitizeArray(data.careTips),
       wateringFrequencyDays: sanitizeNumber(data.wateringFrequencyDays, 7),
       sunTolerance: (Object.values(SunTolerance).includes(data.sunTolerance) ? data.sunTolerance : SunTolerance.PARTIAL) as SunTolerance,
       minTemp: sanitizeNumber(data.minTemp, 10),
       maxTemp: sanitizeNumber(data.maxTemp, 30),
-      fertilizer: sanitizeString(data.fertilizer),
-      soil: sanitizeString(data.soil),
-      environmentTips: sanitizeString(data.environmentTips),
+      fertilizer: sanitizeInput(data.fertilizer),
+      soil: sanitizeInput(data.soil),
+      environmentTips: sanitizeInput(data.environmentTips),
       wateringHistory: []
     };
 
@@ -127,19 +121,19 @@ export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant
     const data = JSON.parse(text);
 
     return {
-      scientificName: sanitizeString(data.scientificName),
-      commonName: sanitizeString(data.commonName),
-      category: sanitizeString(data.category) || "Geral",
-      description: sanitizeString(data.description),
-      origin: sanitizeString(data.origin),
+      scientificName: sanitizeInput(data.scientificName),
+      commonName: sanitizeInput(data.commonName),
+      category: sanitizeInput(data.category) || "Geral",
+      description: sanitizeInput(data.description),
+      origin: sanitizeInput(data.origin),
       careTips: sanitizeArray(data.careTips),
       wateringFrequencyDays: sanitizeNumber(data.wateringFrequencyDays, 7),
       sunTolerance: (Object.values(SunTolerance).includes(data.sunTolerance) ? data.sunTolerance : SunTolerance.PARTIAL) as SunTolerance,
       minTemp: sanitizeNumber(data.minTemp, 10),
       maxTemp: sanitizeNumber(data.maxTemp, 30),
-      fertilizer: sanitizeString(data.fertilizer),
-      soil: sanitizeString(data.soil),
-      environmentTips: sanitizeString(data.environmentTips),
+      fertilizer: sanitizeInput(data.fertilizer),
+      soil: sanitizeInput(data.soil),
+      environmentTips: sanitizeInput(data.environmentTips),
       wateringHistory: []
     };
   } catch (error) {
