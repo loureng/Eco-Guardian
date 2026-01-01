@@ -1,6 +1,6 @@
-import { Sun, CloudRain, Wind, Cloud, MapPin, Droplets, Umbrella } from 'lucide-react';
 
 import React from 'react';
+import { Cloud, Sun, CloudRain, Wind, Droplets, MapPin, Umbrella, ThermometerSun } from 'lucide-react';
 import { WeatherData } from '../types';
 
 interface Props {

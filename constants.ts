@@ -1,4 +1,5 @@
 
+import { SunTolerance } from './types';
 
 export const APP_NAME = "EcoGuardian";
 

@@ -1,53 +1,38 @@
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Plant, WeatherData } from '../types';
-import { calculateSmartWatering, checkPlantHealth, analyzeWeatherFactors } from '../services/plantLogic';
-import { Droplets, CheckCircle2, AlertTriangle, CloudRain } from 'lucide-react';
-
-import type { WeatherFactors } from '../services/plantLogic';
+import { calculateSmartWatering, checkPlantHealth } from '../services/plantLogic';
+import { Droplets, CheckCircle2, AlertTriangle, Calendar, CloudRain } from 'lucide-react';
 
 interface Props {
   plants: Plant[];
   weather: WeatherData | null;
-  weatherFactors?: WeatherFactors;
 }
 
-export const DashboardSummary = React.memo<Props>(({ plants, weather, weatherFactors: propWeatherFactors }) => {
-  // Memoize calculations to prevent re-calculation on every render
-  const summary = useMemo(() => {
-    if (plants.length === 0) return null;
+export const DashboardSummary: React.FC<Props> = ({ plants, weather }) => {
+  if (plants.length === 0) return null;
 
-    let tasks = 0;
-    let healthy = 0;
-    let alerts = 0;
+  // Cálculos rápidos
+  const today = new Date().toDateString();
+  let tasksToday = 0;
+  let healthyPlants = 0;
+  let alertsCount = 0;
 
-    // ⚡ Bolt Optimization: Pre-calculate weather factors once instead of for every plant
-    // Use passed factors if available, otherwise calculate locally
-    const weatherFactors = propWeatherFactors || (weather ? analyzeWeatherFactors(weather) : undefined);
+  plants.forEach(plant => {
+    // Check Tasks
+    const schedule = calculateSmartWatering(plant, weather);
+    if (schedule.daysRemaining <= 0) tasksToday++;
 
-    plants.forEach(plant => {
-      // Check Tasks
-      // Pass the pre-calculated weather factors to avoid redundant weather analysis loops
-      const schedule = calculateSmartWatering(plant, weather, weatherFactors);
-      if (schedule.daysRemaining <= 0) tasks++;
+    // Check Health
+    const alerts = checkPlantHealth(plant, weather);
+    if (alerts.some(a => a.type === 'danger' || a.type === 'warning')) {
+      alertsCount++;
+    } else {
+      healthyPlants++;
+    }
+  });
 
-      // Check Health
-      const plantAlerts = checkPlantHealth(plant, weather);
-      if (plantAlerts.some(a => a.type === 'danger' || a.type === 'warning')) {
-        alerts++;
-      } else {
-        healthy++;
-      }
-    });
-
-    return { tasksToday: tasks, healthyPlants: healthy, alertsCount: alerts };
-  }, [plants, weather, propWeatherFactors]);
-
-  const nextRain = useMemo(() => weather?.forecast.find(f => f.rainChance > 60), [weather]);
-
-  if (plants.length === 0 || !summary) return null;
-
-  const { tasksToday, healthyPlants, alertsCount } = summary;
+  const nextRain = weather?.forecast.find(f => f.rainChance > 60);
 
   return (
     <div className="grid grid-cols-2 gap-3 mb-6 animate-[fadeIn_0.3s_ease-out]">
@@ -103,4 +88,4 @@ export const DashboardSummary = React.memo<Props>(({ plants, weather, weatherFac
       </div>
     </div>
   );
-});
+};

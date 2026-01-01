@@ -2,27 +2,23 @@
 import React, { useMemo } from 'react';
 import { Plant, WeatherData } from '../types';
 import { calculateSmartWatering } from '../services/plantLogic';
-import { Calendar, CheckCircle2, Droplets, Clock, CalendarPlus } from 'lucide-react';
-
-import { WeatherFactors } from '../services/plantLogic';
+import { Calendar, Droplets, ArrowRight, CalendarPlus, Clock } from 'lucide-react';
 
 interface Props {
   plants: Plant[];
   weather: WeatherData | null;
-  weatherFactors?: WeatherFactors;
   onWater: (id: string) => void;
   onSchedule: (plant: Plant, date: Date) => void;
 }
 
-export const AgendaView: React.FC<Props> = ({ plants, weather, weatherFactors, onWater, onSchedule }) => {
+export const AgendaView: React.FC<Props> = ({ plants, weather, onWater, onSchedule }) => {
   
   const scheduleData = useMemo(() => {
     const today = new Date();
     today.setHours(0,0,0,0);
 
     const items = plants.map(plant => {
-      // ⚡ Bolt Optimization: Use precomputed weather factors
-      const info = calculateSmartWatering(plant, weather, weatherFactors);
+      const info = calculateSmartWatering(plant, weather);
       return { plant, info };
     });
 
@@ -37,7 +33,7 @@ export const AgendaView: React.FC<Props> = ({ plants, weather, weatherFactors, o
     };
 
     return groups;
-  }, [plants, weather, weatherFactors]);
+  }, [plants, weather]);
 
   if (plants.length === 0) {
     return (
@@ -70,7 +66,7 @@ export const AgendaView: React.FC<Props> = ({ plants, weather, weatherFactors, o
           </div>
         ) : (
           <div className="space-y-3">
-            {scheduleData.today.map(({ plant }) => (
+            {scheduleData.today.map(({ plant, info }) => (
               <div key={plant.id} className="bg-white p-4 rounded-xl shadow-sm border border-emerald-100 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                    <img src={plant.imageUrl} alt={plant.commonName} className="w-12 h-12 rounded-lg object-cover bg-slate-100" />
@@ -82,8 +78,6 @@ export const AgendaView: React.FC<Props> = ({ plants, weather, weatherFactors, o
                 <button 
                   onClick={() => onWater(plant.id)}
                   className="bg-emerald-600 text-white p-2.5 rounded-full shadow-lg shadow-emerald-200 hover:scale-105 transition-transform"
-                  aria-label={`Regar ${plant.commonName}`}
-                  title={`Regar ${plant.commonName}`}
                 >
                   <Droplets size={20} />
                 </button>
@@ -100,7 +94,7 @@ export const AgendaView: React.FC<Props> = ({ plants, weather, weatherFactors, o
             <Clock size={14} /> Próximos 7 Dias
           </h3>
           <div className="relative border-l-2 border-slate-100 ml-3 space-y-6 pb-2">
-            {scheduleData.week.map(({ plant, info }) => (
+            {scheduleData.week.map(({ plant, info }, idx) => (
               <div key={plant.id} className="ml-6 relative">
                 {/* Dot */}
                 <div className="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full bg-white border-2 border-slate-300"></div>
@@ -127,7 +121,6 @@ export const AgendaView: React.FC<Props> = ({ plants, weather, weatherFactors, o
                    <button 
                      onClick={() => onSchedule(plant, info.nextDate)}
                      className="flex items-center justify-center gap-2 text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg hover:bg-emerald-100 transition-colors w-full sm:w-auto"
-                     aria-label={`Agendar rega de ${plant.commonName} no calendário`}
                    >
                      <CalendarPlus size={14} /> Integrar Calendário
                    </button>
@@ -157,3 +150,4 @@ export const AgendaView: React.FC<Props> = ({ plants, weather, weatherFactors, o
     </div>
   );
 };
+import { CheckCircle2 } from 'lucide-react';

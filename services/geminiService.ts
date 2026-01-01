@@ -1,19 +1,11 @@
-import { GoogleGenAI, Schema, Type } from '@google/genai';
-
+import { GoogleGenAI, Type, Schema, Content } from "@google/genai";
 import { Plant, SunTolerance, ChatMessage, UserProfile } from "../types";
 import { PLANT_IDENTIFICATION_PROMPT, PLANT_DETAILS_PROMPT } from "../constants";
 
-let geminiClientInstance: GoogleGenAI | null = null;
-
 const getGeminiClient = () => {
-  if (geminiClientInstance) return geminiClientInstance;
-
   const apiKey = process.env.API_KEY;
   if (!apiKey) throw new Error("Chave de API não encontrada");
-
-  // ⚡ Bolt Optimization: Singleton pattern for API client
-  geminiClientInstance = new GoogleGenAI({ apiKey });
-  return geminiClientInstance;
+  return new GoogleGenAI({ apiKey });
 };
 
 const plantSchema: Schema = {
@@ -43,31 +35,21 @@ const plantSchema: Schema = {
   required: ["scientificName", "commonName", "wateringFrequencyDays", "sunTolerance", "minTemp", "maxTemp"],
 };
 
-const sanitizeString = (val: unknown): string => {
+const sanitizeString = (val: any): string => {
   if (val === null || val === undefined) return "";
   if (typeof val === 'string') return val.trim();
   if (typeof val === 'number') return String(val);
   return ""; 
 };
 
-const sanitizeNumber = (val: unknown, defaultVal: number): number => {
+const sanitizeNumber = (val: any, defaultVal: number): number => {
   const num = Number(val);
   return isNaN(num) ? defaultVal : num;
 };
 
-const sanitizeArray = (val: unknown): string[] => {
+const sanitizeArray = (val: any): string[] => {
   if (Array.isArray(val)) return val.map(v => sanitizeString(v));
   return [];
-};
-
-// Security: Sanitize input to prevent Prompt Injection
-export const sanitizeForPrompt = (val: string | undefined | null, maxLength = 100): string => {
-  if (!val) return "";
-  // Remove quotes, braces, and newlines to prevent injection
-  return val.replace(/["'{}]/g, "")
-            .replace(/[\r\n]+/g, " ") // Replace newlines with space
-            .slice(0, maxLength)
-            .trim();
 };
 
 export const identifyPlant = async (base64Image: string): Promise<Partial<Plant>> => {
@@ -79,7 +61,7 @@ export const identifyPlant = async (base64Image: string): Promise<Partial<Plant>
 
     // Using Standard Flash for Vision tasks
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.5-flash", 
       contents: {
         parts: [
           { inlineData: { mimeType: "image/jpeg", data: cleanBase64 } },
@@ -124,16 +106,11 @@ export const identifyPlant = async (base64Image: string): Promise<Partial<Plant>
 export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant>> => {
   try {
     const ai = getGeminiClient();
-    // Security: Sanitize input to prevent Prompt Injection
-    const sanitizedName = sanitizeForPrompt(name);
+    const prompt = PLANT_DETAILS_PROMPT.replace("{{NAME}}", name);
 
-    if (!sanitizedName || sanitizedName === "Desconhecido") throw new Error("Nome da planta inválido");
-
-    const prompt = PLANT_DETAILS_PROMPT.replace("{{NAME}}", sanitizedName);
-
-    // Using Flash Lite for faster text response as requested
+    // Using Flash Lite for faster text response
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-lite",
+      model: "gemini-2.5-flash-lite",
       contents: {
         parts: [{ text: prompt }]
       },
@@ -174,9 +151,12 @@ export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant
 export const generatePlantImage = async (plantName: string): Promise<string | null> => {
   try {
     const ai = getGeminiClient();
-    // Security: Reuse sanitizeForPrompt as context sanitizer
-    const cleanName = sanitizeForPrompt(plantName);
-    const prompt = `A professional, high-quality, photorealistic close-up photo of a ${cleanName} plant in a modern pot. Bright natural lighting, soft shadows, blurred living room background. 4k resolution.`;
+    // Prompt atualizado para focar ESTRITAMENTE na planta e aplicar o efeito de fundo bokeh
+    const prompt = `A cinematic, photorealistic botanical shot of the plant: ${plantName}.
+    CRITICAL: This is a PLANT. Focus entirely on the foliage and unique characteristics of the species. DO NOT SHOW ANIMALS.
+    Composition: A clear, centered close-up view of the plant.
+    Background: A soft, blurred (bokeh) environment reflecting its natural origin (e.g., tropical rainforest, desert, mountains). The background should be atmospheric and opaque to highlight the plant.
+    Lighting: Soft natural light, golden hour, high contrast, 4k resolution.`;
 
     const response = await ai.models.generateImages({
       model: 'imagen-4.0-generate-001',
@@ -205,7 +185,7 @@ export const sendChatMessage = async (
   history: ChatMessage[], 
   newMessage: string, 
   userProfile: UserProfile | null
-): Promise<{ text: string, groundingChunks?: unknown[] }> => {
+): Promise<{ text: string, groundingChunks?: any[] }> => {
   try {
     const ai = getGeminiClient();
     
@@ -213,15 +193,9 @@ export const sendChatMessage = async (
     let systemInstruction = "Você é o EcoGuardian, um especialista amigável em plantas. Responda em Português do Brasil.";
     
     if (userProfile) {
-      const plantNames = userProfile.plants
-        .map(p => sanitizeForPrompt(p.commonName, 50))
-        .join(", ");
-
-      const dwelling = sanitizeForPrompt(userProfile.dwellingType, 20) || 'Casa/Apartamento';
-      const city = sanitizeForPrompt(userProfile.location?.city, 50) || 'Desconhecida';
-
-      systemInstruction += `\nO usuário vive em: ${dwelling}.`;
-      systemInstruction += `\nLocalização: ${city}.`;
+      const plantNames = userProfile.plants.map(p => p.commonName).join(", ");
+      systemInstruction += `\nO usuário vive em: ${userProfile.dwellingType || 'Casa/Apartamento'}.`;
+      systemInstruction += `\nLocalização: ${userProfile.location?.city || 'Desconhecida'}.`;
       if (plantNames) {
         systemInstruction += `\nPlantas do usuário: ${plantNames}.`;
       } else {
@@ -230,8 +204,26 @@ export const sendChatMessage = async (
       systemInstruction += `\nSe o usuário perguntar "onde comprar" ou lojas, use o Google Maps. Para cuidados gerais ou novidades, use o Google Search.`;
     }
 
+    // Configuração das ferramentas
+    const config: any = {
+      systemInstruction: systemInstruction,
+      tools: [{ googleSearch: {} }, { googleMaps: {} }],
+    };
+
+    // Adiciona localização para Grounding se disponível
+    if (userProfile?.location) {
+      config.toolConfig = {
+        retrievalConfig: {
+          latLng: {
+            latitude: userProfile.location.latitude,
+            longitude: userProfile.location.longitude
+          }
+        }
+      };
+    }
+
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-pro-exp", // Chatbot uses the most capable model
+      model: "gemini-2.5-flash", // Utilizando Flash para suporte a Tools (Maps/Search)
       contents: [
         ...history.filter(h => h.role !== 'model').map(h => ({
            role: 'user',
@@ -239,10 +231,7 @@ export const sendChatMessage = async (
         })),
         { role: 'user', parts: [{ text: newMessage }] }
       ],
-      config: {
-        systemInstruction: systemInstruction,
-        tools: [{ googleSearch: {} }, { googleMaps: {} }],
-      }
+      config: config
     });
 
     // Extract Grounding Data
