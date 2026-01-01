@@ -8,9 +8,15 @@ describe('Security Service', () => {
       expect(sanitizeInput('  hello  ')).toBe('hello');
     });
 
-    it('should strip HTML tags', () => {
+    it('should strip dangerous HTML tags', () => {
       expect(sanitizeInput('<script>alert(1)</script>')).toBe('alert(1)');
-      expect(sanitizeInput('<b>Bold</b>')).toBe('Bold');
+      expect(sanitizeInput('<iframe src="hack.com"></iframe>')).toBe('');
+    });
+
+    it('should preserve safe content and symbols', () => {
+       expect(sanitizeInput('Temperature < 30')).toBe('Temperature < 30');
+       expect(sanitizeInput('Fern & Moss')).toBe('Fern & Moss');
+       expect(sanitizeInput('<b>Bold</b>')).toBe('<b>Bold</b>'); // Allow harmless tags, React escapes them anyway
     });
 
     it('should limit length', () => {
@@ -41,6 +47,8 @@ describe('Security Service', () => {
 
     it('should allow relative paths', () => {
       expect(isSafeUrl('/assets/image.png')).toBe(true);
+      expect(isSafeUrl('assets/image.png')).toBe(true);
+      expect(isSafeUrl('uploads/my-plant.jpg')).toBe(true);
     });
   });
 });

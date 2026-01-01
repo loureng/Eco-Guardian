@@ -14,11 +14,13 @@ export const sanitizeInput = (input: string, maxLength: number = 500): string =>
   // 1. Trim whitespace
   let clean = input.trim();
 
-  // 2. Remove potentially dangerous HTML tags (basic strip)
-  // This is a naive implementation; for robust XSS, use DOMPurify in production.
-  // However, since we use React which auto-escapes, this is primarily to prevent
-  // storage of garbage or malicious payloads that might be used elsewhere.
-  clean = clean.replace(/<[^>]*>?/gm, '');
+  // 2. Remove dangerous HTML tags while preserving safe content.
+  // React handles escaping for display, so we just want to remove script injection vectors.
+  // This is a basic filter; for production, use a library like DOMPurify.
+  clean = clean.replace(/<(\/?)(script|iframe|object|embed|applet|form|input|button)([^>]*?)>/ig, '');
+
+  // Also handle javascript: pseudo-protocol in attributes if any remained (unlikely with just tag stripping, but safe)
+  clean = clean.replace(/javascript:/gi, '');
 
   // 3. Limit length to prevent DoS
   if (clean.length > maxLength) {
@@ -34,8 +36,15 @@ export const sanitizeInput = (input: string, maxLength: number = 500): string =>
 export const isSafeUrl = (url: string): boolean => {
   if (!url) return false;
 
-  // Allow relative paths
-  if (url.startsWith('/')) return true;
+  // Allow relative paths (starting with / or alphanumeric chars for subfolders)
+  if (url.startsWith('/') || /^[a-zA-Z0-9_\-\.]/.test(url)) {
+      // Check for dangerous protocol patterns even in relative-looking paths
+      if (/^\s*(javascript|vbscript|data):/i.test(url)) {
+          // Exception: data:image is allowed
+          if (!/^\s*data:image\//i.test(url)) return false;
+      }
+      return true;
+  }
 
   // Allow http, https, and data (images)
   // Reject javascript: vbscript: etc
