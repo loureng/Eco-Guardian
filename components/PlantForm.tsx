@@ -1,10 +1,9 @@
-import { Edit2, Sprout, Layers, Wind, Loader2, Search, Camera, AlertCircle, X, Check } from 'lucide-react';
-
 import React, { useState, useEffect, useId } from 'react';
 import { Plant, SunTolerance } from '../types';
 import { Button } from './Button';
+import { Edit2, Check, Search, Loader2, AlertCircle, Camera, X, Wind, Layers, Sprout } from 'lucide-react';
 import { getPlantDetailsByName, identifyPlant } from '../services/geminiService';
-import { sanitizeInput } from '../services/security';
+import { sanitizeInput } from '../services/security/security';
 
 interface Props {
   initialData: Partial<Plant>;
@@ -40,6 +39,7 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
   const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
 
+  // Accessible ID generation
   const formId = useId();
 
   useEffect(() => {
@@ -56,7 +56,7 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
     }
   }, [initialData, imageUrl, isManualEntry]);
 
-  const handleChange = (field: keyof Plant, value: unknown) => {
+  const handleChange = (field: keyof Plant, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -81,9 +81,20 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
         setIsCustomCategory(false);
       }
 
-    } catch (error) {
-      console.error(error);
-      setSearchError("Não encontramos essa planta. Tente outro nome ou preencha manualmente.");
+    } catch (error: any) {
+      console.error("Erro na busca:", error);
+      // Fix: Ensure error is a string to avoid [object Object]
+      let errorMessage = "Não conseguimos processar essa planta. Verifique sua conexão ou preencha manualmente.";
+      
+      if (error instanceof SyntaxError || (error.message && error.message.includes('JSON'))) {
+        errorMessage = "A IA retornou dados incompletos. Tente reformular o nome da planta.";
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      setSearchError(errorMessage);
     } finally {
       setIsSearching(false);
     }
@@ -93,61 +104,70 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setIsAnalyzingImage(true);
-    setSearchError(null);
+    // Preview imediato
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64 = reader.result as string;
+      setLocalImage(base64); // Atualiza preview
+      setIsAnalyzingImage(true);
+      setSearchError(null);
 
-    try {
-      // Security & Performance: Resize and compress image
-      // Prevents DoS (storage quota exceeded) and reduces payload size
-      const { processImage } = await import('../services/imageService');
-      const base64 = await processImage(file);
+      try {
+        // Chama Gemini Vision API
+        const result = await identifyPlant(base64);
+        setFormData(prev => ({
+          ...prev,
+          ...result
+        }));
+        
+        // Update custom category state based on result
+        if (result.category && !CATEGORIES.includes(result.category)) {
+            setIsCustomCategory(true);
+        } else {
+            setIsCustomCategory(false);
+        }
+      } catch (error: any) {
+        console.error("Erro ao identificar imagem no form:", error);
+        
+        // Fix: Ensure error is a string
+        let errorMessage = "Não foi possível identificar a planta. Tente novamente ou use a busca por nome.";
+        
+        if (error instanceof SyntaxError || (error.message && error.message.includes('JSON'))) {
+           errorMessage = "A imagem não gerou dados legíveis. Tente uma foto mais clara e focada.";
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
 
-      setLocalImage(base64);
-
-      // Chama Gemini Vision API
-      const result = await identifyPlant(base64);
-      setFormData(prev => ({
-        ...prev,
-        ...result
-      }));
-
-      // Update custom category state based on result
-      if (result.category && !CATEGORIES.includes(result.category)) {
-          setIsCustomCategory(true);
-      } else {
-          setIsCustomCategory(false);
+        setSearchError(errorMessage);
+      } finally {
+        setIsAnalyzingImage(false);
       }
-    } catch (error) {
-      console.error("Erro ao processar imagem:", error);
-      if (error instanceof Error) {
-        setSearchError(error.message);
-      } else {
-        setSearchError("Não conseguimos processar essa imagem. Tente outra.");
-      }
-    } finally {
-      setIsAnalyzingImage(false);
-    }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSave = () => {
     // Garante que a imagem local (possivelmente atualizada) seja enviada
     // E garante que campos extras da AI (descrição, origem, tips, fertilizer, soil, environment) sejam passados
 
-    // Security: Sanitize inputs to prevent storing XSS payloads or malformed data
-    const safeData = {
-      ...formData,
-      commonName: formData.commonName ? sanitizeInput(formData.commonName) : formData.commonName,
-      scientificName: formData.scientificName ? sanitizeInput(formData.scientificName) : formData.scientificName,
-      category: formData.category ? sanitizeInput(formData.category) : formData.category,
-      description: formData.description ? sanitizeInput(formData.description) : formData.description,
-      origin: formData.origin ? sanitizeInput(formData.origin) : formData.origin,
-      fertilizer: formData.fertilizer ? sanitizeInput(formData.fertilizer) : formData.fertilizer,
-      soil: formData.soil ? sanitizeInput(formData.soil) : formData.soil,
-      environmentTips: formData.environmentTips ? sanitizeInput(formData.environmentTips) : formData.environmentTips,
-      imageUrl: localImage
+    // Sanitize user-editable string fields before saving
+    const sanitizedData = {
+        ...formData,
+        commonName: sanitizeInput(formData.commonName || ''),
+        scientificName: sanitizeInput(formData.scientificName || ''),
+        category: sanitizeInput(formData.category || ''),
+        description: sanitizeInput(formData.description || ''),
+        origin: sanitizeInput(formData.origin || ''),
+        careTips: (formData.careTips || []).map(tip => sanitizeInput(tip)),
+        fertilizer: sanitizeInput(formData.fertilizer || ''),
+        soil: sanitizeInput(formData.soil || ''),
+        environmentTips: sanitizeInput(formData.environmentTips || ''),
+        imageUrl: localImage
     };
 
-    onSave(safeData);
+    onSave(sanitizedData);
   };
 
   if (!isEditing) {
@@ -163,28 +183,28 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
         
         <div className="space-y-3 text-slate-700">
            <div>
-             <label className="text-xs font-bold uppercase text-slate-400">Nome Popular</label>
+             <span className="text-xs font-bold uppercase text-slate-400 block">Nome Popular</span>
              <p className="font-medium text-lg">{formData.commonName}</p>
            </div>
            <div>
-             <label className="text-xs font-bold uppercase text-slate-400">Nome Científico</label>
+             <span className="text-xs font-bold uppercase text-slate-400 block">Nome Científico</span>
              <p className="italic">{formData.scientificName}</p>
            </div>
            
            {formData.description && (
              <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-100">
-               <label className="text-xs font-bold uppercase text-emerald-700">Sobre</label>
+               <span className="text-xs font-bold uppercase text-emerald-700 block">Sobre</span>
                <p className="text-sm italic text-emerald-900 mt-1">{formData.description}</p>
              </div>
            )}
 
            <div className="grid grid-cols-2 gap-4">
              <div>
-                <label className="text-xs font-bold uppercase text-slate-400">Categoria</label>
+                <span className="text-xs font-bold uppercase text-slate-400 block">Categoria</span>
                 <p className="text-sm">{formData.category || "Geral"}</p>
              </div>
              <div>
-                <label className="text-xs font-bold uppercase text-slate-400">Regar a cada</label>
+                <span className="text-xs font-bold uppercase text-slate-400 block">Regar a cada</span>
                 <p className="text-sm">{formData.wateringFrequencyDays} dias</p>
              </div>
            </div>
@@ -223,7 +243,7 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
     );
   }
 
-  // Edit Mode (Form) - Same as before
+  // Edit Mode (Form)
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 space-y-4">
       <div className="flex justify-between items-center">
@@ -256,11 +276,11 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !isSearching && handleSearch()}
               disabled={isSearching || isAnalyzingImage}
-              maxLength={100}
             />
             <button 
               onClick={handleSearch}
               disabled={isSearching || isAnalyzingImage || !searchQuery.trim()}
+              aria-label="Buscar dados da planta"
               className="bg-emerald-600 text-white px-3 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all min-w-[44px] flex items-center justify-center"
             >
               {isSearching ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
@@ -276,20 +296,20 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
 
         {/* Opção 2: Foto */}
         <div>
-           <label className="block text-xs font-bold uppercase text-emerald-700 mb-2">Identificar por Foto</label>
+           <label htmlFor={`${formId}-photo`} className="block text-xs font-bold uppercase text-emerald-700 mb-2">Identificar por Foto</label>
            <div className="relative">
              <input 
+                id={`${formId}-photo`}
                 type="file" 
                 accept="image/*" 
                 onChange={handleImageAutoFill}
                 disabled={isSearching || isAnalyzingImage}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 peer"
-                aria-label="Upload de foto para identificação"
              />
-             <div className="w-full flex items-center justify-center gap-2 bg-white border border-emerald-200 text-emerald-700 py-2 rounded-lg hover:bg-emerald-100 transition-colors font-medium text-sm peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-500 peer-focus-visible:ring-offset-2">
+             <button className="w-full flex items-center justify-center gap-2 bg-white border border-emerald-200 text-emerald-700 py-2 rounded-lg hover:bg-emerald-100 transition-colors font-medium text-sm peer-focus:ring-2 peer-focus:ring-emerald-500 peer-focus:ring-offset-2">
                 {isAnalyzingImage ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
                 {isAnalyzingImage ? "Analisando Imagem..." : "Tirar Foto / Galeria"}
-             </div>
+             </button>
            </div>
         </div>
         
@@ -311,7 +331,6 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
             value={formData.commonName || ''}
             onChange={e => handleChange('commonName', e.target.value)}
             placeholder="ex: Espada de São Jorge"
-            maxLength={50}
           />
         </div>
         
@@ -323,7 +342,6 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
             value={formData.scientificName || ''}
             onChange={e => handleChange('scientificName', e.target.value)}
             placeholder="ex: Sansevieria trifasciata"
-            maxLength={100}
           />
         </div>
 
@@ -355,13 +373,12 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
            ) : (
              <div className="flex gap-2 animate-[fadeIn_0.2s_ease-out]">
                <input 
-                 id={`${formId}-category`}
+                 id={`${formId}-category-custom`}
                  className="flex-1 p-2 border border-slate-200 rounded-lg"
                  placeholder="Digite a categoria (ex: Orquídea)..."
                  value={formData.category || ''}
                  onChange={(e) => handleChange('category', e.target.value)}
                  autoFocus
-                 maxLength={30} // Prevent DoS/Storage exhaustion
                />
                <button 
                  onClick={() => {
@@ -374,6 +391,7 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
                  }}
                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg"
                  title="Voltar para lista"
+                 aria-label="Voltar para lista de categorias"
                >
                  <X size={20} />
                </button>
@@ -383,12 +401,11 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor={`${formId}-frequency`} className="block text-xs font-bold uppercase text-slate-500 mb-1">Frequência de Rega (Dias)</label>
+            <label htmlFor={`${formId}-watering`} className="block text-xs font-bold uppercase text-slate-500 mb-1">Frequência de Rega (Dias)</label>
             <input 
-              id={`${formId}-frequency`}
+              id={`${formId}-watering`}
               type="number"
               min="1"
-              max="365"
               placeholder="Ex: 7"
               className="w-full p-2 border border-slate-200 rounded-lg"
               value={formData.wateringFrequencyDays || ''}
@@ -413,12 +430,36 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
         <div className="grid grid-cols-2 gap-3">
            <div>
              <label htmlFor={`${formId}-minTemp`} className="block text-xs font-bold uppercase text-slate-500 mb-1">Min Temp (°C)</label>
-             <input id={`${formId}-minTemp`} type="number" min="-50" max="60" className="w-full p-2 border border-slate-200 rounded-lg" value={formData.minTemp || 0} onChange={e => handleChange('minTemp', parseInt(e.target.value))} />
+             <input
+               id={`${formId}-minTemp`}
+               type="number"
+               className="w-full p-2 border border-slate-200 rounded-lg"
+               value={formData.minTemp || 0}
+               onChange={e => handleChange('minTemp', parseInt(e.target.value))}
+             />
            </div>
            <div>
              <label htmlFor={`${formId}-maxTemp`} className="block text-xs font-bold uppercase text-slate-500 mb-1">Máx Temp (°C)</label>
-             <input id={`${formId}-maxTemp`} type="number" min="-50" max="60" className="w-full p-2 border border-slate-200 rounded-lg" value={formData.maxTemp || 35} onChange={e => handleChange('maxTemp', parseInt(e.target.value))} />
+             <input
+               id={`${formId}-maxTemp`}
+               type="number"
+               className="w-full p-2 border border-slate-200 rounded-lg"
+               value={formData.maxTemp || 35}
+               onChange={e => handleChange('maxTemp', parseInt(e.target.value))}
+             />
            </div>
+        </div>
+
+        {/* New Field: Environment Tips */}
+        <div>
+          <label htmlFor={`${formId}-envTips`} className="block text-xs font-bold uppercase text-slate-500 mb-1">Dicas de Ambiente (Ventilação/Chuva)</label>
+          <input 
+            id={`${formId}-envTips`}
+            className="w-full p-2 border border-slate-200 rounded-lg"
+            value={formData.environmentTips || ''}
+            onChange={e => handleChange('environmentTips', e.target.value)}
+            placeholder="Ex: Local arejado, evitar chuva direta..."
+          />
         </div>
       </div>
 

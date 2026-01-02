@@ -11,14 +11,16 @@ interface Props {
 
 export const ConfirmationModal: React.FC<Props> = ({ isOpen, title, message, onConfirm, onCancel }) => {
   const titleId = useId();
-  const descriptionId = useId();
+  const messageId = useId();
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Focus management and Escape key
+  // Focus trap and Escape key handling
   useEffect(() => {
     if (isOpen) {
-      // Focus cancel button for safety (destructive action prevention)
-      cancelButtonRef.current?.focus();
+      // Focus cancel button on open for safety
+      setTimeout(() => {
+        cancelButtonRef.current?.focus();
+      }, 50);
 
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
@@ -36,25 +38,20 @@ export const ConfirmationModal: React.FC<Props> = ({ isOpen, title, message, onC
   return (
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"
-      onClick={(e) => {
-        // Close if clicked specifically on the backdrop
-        if (e.target === e.currentTarget) onCancel();
-      }}
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
-      aria-describedby={descriptionId}
+      aria-describedby={messageId}
     >
       <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl animate-[scaleIn_0.2s_ease-out] border border-slate-100">
         <h3 id={titleId} className="text-xl font-bold text-slate-900 mb-2">{title}</h3>
-        <p id={descriptionId} className="text-slate-600 mb-6 leading-relaxed">{message}</p>
+        <p id={messageId} className="text-slate-600 mb-6 leading-relaxed">{message}</p>
         <div className="flex gap-3">
-          {/* Ref added to Cancel button to receive initial focus */}
           <Button
-            ref={cancelButtonRef}
             variant="outline"
             onClick={onCancel}
             className="flex-1"
+            ref={cancelButtonRef}
           >
             Cancelar
           </Button>

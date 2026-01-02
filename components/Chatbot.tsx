@@ -2,7 +2,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UserProfile, ChatMessage } from '../types';
 import { sendChatMessage } from '../services/geminiService';
-import { isSafeUrl } from '../services/security';
 import { MessageCircle, X, Send, MapPin, Globe, Loader2, Bot } from 'lucide-react';
 
 interface Props {
@@ -53,7 +52,6 @@ export const Chatbot: React.FC<Props> = ({ user }) => {
         <button 
           onClick={() => setIsOpen(true)}
           className="fixed bottom-6 right-6 w-14 h-14 bg-emerald-600 text-white rounded-full shadow-xl flex items-center justify-center hover:bg-emerald-700 hover:scale-105 transition-all z-40"
-          aria-label="Abrir assistente virtual EcoGuardian"
         >
           <MessageCircle size={28} />
         </button>
@@ -61,11 +59,7 @@ export const Chatbot: React.FC<Props> = ({ user }) => {
 
       {/* Chat Window */}
       {isOpen && (
-        <div
-          role="dialog"
-          aria-label="Assistente Virtual EcoGuardian"
-          className="fixed bottom-6 right-6 w-[90vw] max-w-[360px] h-[500px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col z-50 animate-[slideUp_0.3s_ease-out] overflow-hidden"
-        >
+        <div className="fixed bottom-6 right-6 w-[90vw] max-w-[360px] h-[500px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col z-50 animate-[slideUp_0.3s_ease-out] overflow-hidden">
           
           {/* Header */}
           <div className="bg-emerald-600 p-4 text-white flex justify-between items-center">
@@ -76,15 +70,11 @@ export const Chatbot: React.FC<Props> = ({ user }) => {
               <div>
                 <h3 className="font-bold text-sm">EcoGuardian Chat</h3>
                 <p className="text-[10px] text-emerald-100 flex items-center gap-1">
-                   <span className="w-1.5 h-1.5 bg-emerald-300 rounded-full animate-pulse"></span> Online (Gemini Pro)
+                   <span className="w-1.5 h-1.5 bg-emerald-300 rounded-full animate-pulse"></span> Online (Gemini Flash)
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="hover:bg-white/20 p-1 rounded transition-colors"
-              aria-label="Fechar chat"
-            >
+            <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-1 rounded transition-colors">
               <X size={20} />
             </button>
           </div>
@@ -103,7 +93,7 @@ export const Chatbot: React.FC<Props> = ({ user }) => {
                   {msg.groundingChunks && msg.groundingChunks.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-2 max-w-[90%]">
                       {msg.groundingChunks.map((chunk, idx) => {
-                        if (chunk.web && isSafeUrl(chunk.web.uri)) {
+                        if (chunk.web) {
                           return (
                             <a key={idx} href={chunk.web.uri} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-md border border-blue-100 hover:bg-blue-100 transition-colors">
                               <Globe size={10} />
@@ -111,7 +101,7 @@ export const Chatbot: React.FC<Props> = ({ user }) => {
                             </a>
                           );
                         }
-                        if (chunk.maps && isSafeUrl(chunk.maps.uri)) {
+                        if (chunk.maps) {
                           return (
                             <a key={idx} href={chunk.maps.uri} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[10px] bg-orange-50 text-orange-600 px-2 py-1 rounded-md border border-orange-100 hover:bg-orange-100 transition-colors">
                               <MapPin size={10} />
@@ -141,15 +131,12 @@ export const Chatbot: React.FC<Props> = ({ user }) => {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 placeholder="Pergunte sobre suas plantas..."
-                aria-label="Digite sua mensagem para o assistente"
-                maxLength={500}
                 className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
               />
               <button 
                 onClick={handleSend}
                 disabled={!input.trim() || isTyping}
                 className="bg-emerald-600 text-white p-2 rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                aria-label="Enviar mensagem"
               >
                 <Send size={20} />
               </button>

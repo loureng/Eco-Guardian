@@ -61,12 +61,10 @@ export const checkNewAchievements = (user: UserProfile, action: ActionType): Ach
   }
 
   // 4. Check "Water Guardian"
-  if (!currentIds.has('water-guardian')) {
-    const totalWatered = user.plants.reduce((acc, p) => acc + (p.wateringHistory?.length || 0), 0);
-    if (totalWatered >= 1) {
-      const badge = ACHIEVEMENTS.find(a => a.id === 'water-guardian');
-      if (badge) newUnlocks.push(badge);
-    }
+  // Note: Since we don't track total waters in history yet, we assume if they water once and don't have the badge, they get it.
+  if (action === 'WATERED' && !currentIds.has('water-guardian')) {
+    const badge = ACHIEVEMENTS.find(a => a.id === 'water-guardian');
+    if (badge) newUnlocks.push(badge);
   }
 
   return newUnlocks;
