@@ -1,18 +1,4 @@
-# Sentinel Journal
-
-This journal documents critical security learnings and vulnerability patterns found in the codebase.
-
-## 2024-05-22 - Image Processing DoS Risk
-**Vulnerability:** Client-side image processing (resizing/compression) was performed on the main thread, potentially causing UI freezing with large files.
-**Learning:** Even client-side processing can be a vector for DoS if not handled asynchronously or off-main-thread.
-**Prevention:** Used `createImageBitmap` (where supported) or ensured processing steps don't block the UI loop. Added strict file size limits before processing.
-
-## 2024-05-22 - LocalStorage XSS Vector
-**Vulnerability:** User input stored in `localStorage` was rendered directly without sanitization.
-**Learning:** `localStorage` is not a secure vault; data retrieved from it must be treated as untrusted input just like network responses.
-**Prevention:** Applied `sanitizeInput` to all string fields before storage and again upon retrieval/rendering where appropriate.
-
-## 2024-05-23 - SVG Injection via Object URL
-**Vulnerability:** Allowing uploads of SVG files created a risk of Stored XSS if the SVG contained script tags and was rendered via `object` or direct injection.
-**Learning:** SVGs are code, not just images.
-**Prevention:** The image service converts all uploads to PNG/JPEG, neutralizing any scripts embedded in SVGs.
+## 2026-01-02 - CSP Implementation for Vite/ESM Architecture
+**Vulnerability:** Lack of Content Security Policy (CSP) exposed the application to potential XSS attacks and unauthorized resource loading.
+**Learning:** The application's architecture heavily relies on an inline `importmap` pointing to `https://esm.sh` and `https://cdn.tailwindcss.com`. A standard strict CSP (`default-src 'self'`) breaks the application immediately. The CSP must strictly whitelist these CDNs and allow `'unsafe-inline'` for `script-src` and `style-src` to accommodate the inline map and Tailwind's runtime injection.
+**Prevention:** Future dependencies should be audited to see if they can be bundled (reducing reliance on 'unsafe-inline' and external CDNs) or if they must be added to the CSP whitelist.
