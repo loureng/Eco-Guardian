@@ -7,6 +7,7 @@ import {
   Wind, Sprout, Layers
 } from 'lucide-react';
 import { checkPlantHealth, calculateSmartWatering } from '../services/plantLogic';
+import { isSafeSrc } from '../services/security/security';
 
 interface Props {
   plant: Plant;
@@ -89,7 +90,7 @@ export const PlantCard: React.FC<Props> = React.memo(({ plant, weather, onWater,
       {/* Header Image Area - Clickable */}
       <div className="relative h-40 bg-slate-100 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
         <img 
-          src={plant.imageUrl || "https://picsum.photos/400/300"} 
+          src={isSafeSrc(plant.imageUrl || "") ? plant.imageUrl : "https://picsum.photos/400/300"}
           alt={plant.commonName} 
           className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
         />
