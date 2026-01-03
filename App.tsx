@@ -93,11 +93,16 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // ⚡ Bolt Optimization: Ref to access weather in callbacks without dependency
+  // ⚡ Bolt Optimization: Ref to access weather and user in callbacks without dependency
   const weatherRef = useRef(weather);
   useEffect(() => {
     weatherRef.current = weather;
   }, [weather]);
+
+  const userRef = useRef(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   // Save user changes
   useEffect(() => {
@@ -263,17 +268,18 @@ const App: React.FC = () => {
   };
 
   const handleWater = useCallback((id: string) => {
-    if(!user) return;
+    const currentUser = userRef.current;
+    if(!currentUser) return;
     const now = Date.now();
-    const updatedPlants = user.plants.map(p => p.id === id ? { ...p, lastWatered: now, wateringHistory: [...(p.wateringHistory || []), now] } : p);
-    const updatedUser = { ...user, plants: updatedPlants };
+    const updatedPlants = currentUser.plants.map(p => p.id === id ? { ...p, lastWatered: now, wateringHistory: [...(p.wateringHistory || []), now] } : p);
+    const updatedUser = { ...currentUser, plants: updatedPlants };
     const unlocked = checkNewAchievements(updatedUser, 'WATERED');
     if (unlocked.length > 0) {
       updatedUser.unlockedAchievements = [...(updatedUser.unlockedAchievements || []), ...unlocked.map(a => a.id)];
       setNewAchievement(unlocked[0]);
     }
     setUser(updatedUser);
-  }, [user]);
+  }, []);
 
   const handleDeleteRequest = useCallback((id: string) => setPlantToDelete(id), []);
   
