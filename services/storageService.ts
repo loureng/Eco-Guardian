@@ -1,4 +1,5 @@
 import { UserProfile } from "../types";
+import { isSafeJSON } from "./security/security";
 
 const KEY = "ECO_GUARDIAN_USER";
 
@@ -11,11 +12,7 @@ export const saveUser = (user: UserProfile) => {
 };
 
 export const loadUser = (): UserProfile | null => {
-  try {
-    const data = localStorage.getItem(KEY);
-    return data ? JSON.parse(data) : null;
-  } catch (e) {
-    console.error("Failed to load user", e);
-    return null;
-  }
+  const data = localStorage.getItem(KEY);
+  // Security: Use safe JSON parsing to prevent crashes from corrupted local storage
+  return isSafeJSON<UserProfile>(data);
 };

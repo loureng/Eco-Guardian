@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type, Schema, Content } from "@google/genai";
 import { Plant, SunTolerance, ChatMessage, UserProfile } from "../types";
 import { PLANT_IDENTIFICATION_PROMPT, PLANT_DETAILS_PROMPT } from "../constants";
-import { sanitizeInput } from "./security/security";
+import { sanitizeInput, isSafeJSON } from "./security/security";
 
 const getGeminiClient = () => {
   const apiKey = process.env.API_KEY;
@@ -72,7 +72,9 @@ export const identifyPlant = async (base64Image: string): Promise<Partial<Plant>
     const text = response.text;
     if (!text) throw new Error("Sem resposta do Gemini");
 
-    const data = JSON.parse(text);
+    // Security: Validate JSON integrity before accessing properties
+    const data = isSafeJSON<any>(text);
+    if (!data) throw new Error("A IA retornou dados inválidos.");
 
     return {
       scientificName: sanitizeInput(data.scientificName),
@@ -118,7 +120,9 @@ export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant
     const text = response.text;
     if (!text) throw new Error("Sem resposta do Gemini");
 
-    const data = JSON.parse(text);
+    // Security: Validate JSON integrity before accessing properties
+    const data = isSafeJSON<any>(text);
+    if (!data) throw new Error("A IA retornou dados inválidos.");
 
     return {
       scientificName: sanitizeInput(data.scientificName),

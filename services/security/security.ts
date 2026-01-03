@@ -63,3 +63,17 @@ export const isSafeUrl = (url: string): boolean => {
 export const isSafeSrc = (src: string): boolean => {
     return isSafeUrl(src);
 }
+
+/**
+ * Safely parses JSON string, returning null if invalid or throwing custom error.
+ * Prevents uncaught exceptions during deserialization.
+ */
+export const isSafeJSON = <T>(jsonString: string | null): T | null => {
+  if (!jsonString) return null;
+  try {
+    return JSON.parse(jsonString) as T;
+  } catch (error) {
+    console.warn("Security: Blocked invalid JSON parse attempt", error);
+    return null;
+  }
+};
