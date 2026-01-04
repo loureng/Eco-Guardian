@@ -99,6 +99,13 @@ const App: React.FC = () => {
     weatherRef.current = weather;
   }, [weather]);
 
+  // ⚡ Bolt Optimization: Ref to access user in callbacks without dependency
+  // This prevents handleWater from being recreated on every user change (e.g. watering one plant)
+  const userRef = useRef(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
   // Save user changes
   useEffect(() => {
     if (user) saveUser(user);
@@ -263,17 +270,21 @@ const App: React.FC = () => {
   };
 
   const handleWater = useCallback((id: string) => {
-    if(!user) return;
+    // ⚡ Bolt Optimization: Use ref to access latest user state without dependency
+    const currentUser = userRef.current;
+    if(!currentUser) return;
+
     const now = Date.now();
-    const updatedPlants = user.plants.map(p => p.id === id ? { ...p, lastWatered: now, wateringHistory: [...(p.wateringHistory || []), now] } : p);
-    const updatedUser = { ...user, plants: updatedPlants };
+    const updatedPlants = currentUser.plants.map(p => p.id === id ? { ...p, lastWatered: now, wateringHistory: [...(p.wateringHistory || []), now] } : p);
+    const updatedUser = { ...currentUser, plants: updatedPlants };
+
     const unlocked = checkNewAchievements(updatedUser, 'WATERED');
     if (unlocked.length > 0) {
       updatedUser.unlockedAchievements = [...(updatedUser.unlockedAchievements || []), ...unlocked.map(a => a.id)];
       setNewAchievement(unlocked[0]);
     }
     setUser(updatedUser);
-  }, [user]);
+  }, []); // Dependencies removed to keep handler stable
 
   const handleDeleteRequest = useCallback((id: string) => setPlantToDelete(id), []);
   
