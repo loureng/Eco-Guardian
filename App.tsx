@@ -316,7 +316,7 @@ const App: React.FC = () => {
              <button 
                onClick={() => setSelectedDwelling('Casa')}
                aria-pressed={selectedDwelling === 'Casa'}
-               className={`flex-1 flex flex-col items-center p-3 rounded-lg border-2 transition-all ${selectedDwelling === 'Casa' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-100 text-slate-400 hover:border-emerald-200'}`}
+               className={`flex-1 flex flex-col items-center p-3 rounded-lg border-2 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${selectedDwelling === 'Casa' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-100 text-slate-400 hover:border-emerald-200'}`}
              >
                 <Home size={24} className="mb-1" />
                 <span className="text-sm font-bold">Casa</span>
@@ -324,7 +324,7 @@ const App: React.FC = () => {
              <button 
                onClick={() => setSelectedDwelling('Apartamento')}
                aria-pressed={selectedDwelling === 'Apartamento'}
-               className={`flex-1 flex flex-col items-center p-3 rounded-lg border-2 transition-all ${selectedDwelling === 'Apartamento' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-100 text-slate-400 hover:border-emerald-200'}`}
+               className={`flex-1 flex flex-col items-center p-3 rounded-lg border-2 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${selectedDwelling === 'Apartamento' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-100 text-slate-400 hover:border-emerald-200'}`}
              >
                 <Building size={24} className="mb-1" />
                 <span className="text-sm font-bold">Apto</span>
@@ -388,6 +388,7 @@ const App: React.FC = () => {
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className={`p-2 rounded-lg transition-colors ${isMenuOpen ? 'bg-slate-100 text-slate-800' : 'text-slate-600 hover:bg-slate-50'}`}
               aria-label="Menu"
+              aria-expanded={isMenuOpen}
             >
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -549,11 +550,12 @@ const App: React.FC = () => {
                 {/* Cards Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Option 1: Camera */}
-                  <div className="relative overflow-hidden group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer">
+                  <div className="relative overflow-hidden group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-emerald-200 focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500 transition-all cursor-pointer">
                     <input 
                       type="file" 
                       accept="image/*" 
                       capture="environment"
+                      aria-label="Tirar foto ou selecionar da galeria para identificar planta"
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                       onChange={handleImageUpload}
                     />
