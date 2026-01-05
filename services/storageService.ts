@@ -1,4 +1,5 @@
 import { UserProfile } from "../types";
+import { validateUserProfile } from "./security/security";
 
 const KEY = "ECO_GUARDIAN_USER";
 
@@ -13,7 +14,10 @@ export const saveUser = (user: UserProfile) => {
 export const loadUser = (): UserProfile | null => {
   try {
     const data = localStorage.getItem(KEY);
-    return data ? JSON.parse(data) : null;
+    if (!data) return null;
+
+    const parsed = JSON.parse(data);
+    return validateUserProfile(parsed);
   } catch (e) {
     console.error("Failed to load user", e);
     return null;
