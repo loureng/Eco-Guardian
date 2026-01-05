@@ -1,4 +1,6 @@
 
+import { UserProfile, Plant, UserLocation } from "../../types";
+
 /**
  * Sentinel Security Service
  * Centralized input validation and sanitization.
@@ -63,3 +65,85 @@ export const isSafeUrl = (url: string): boolean => {
 export const isSafeSrc = (src: string): boolean => {
     return isSafeUrl(src);
 }
+
+/**
+ * Reconstructs a Plant object strictly to avoid pollution.
+ */
+const sanitizePlant = (plant: any): Plant | null => {
+  if (!plant || typeof plant !== 'object') return null;
+  if (typeof plant.id !== 'string' || typeof plant.commonName !== 'string') return null;
+
+  // Allow only whitelisted fields
+  return {
+    id: sanitizeInput(plant.id),
+    scientificName: sanitizeInput(plant.scientificName || ''),
+    commonName: sanitizeInput(plant.commonName),
+    category: sanitizeInput(plant.category || ''),
+    description: sanitizeInput(plant.description || ''),
+    origin: sanitizeInput(plant.origin || ''),
+    careTips: Array.isArray(plant.careTips) ? plant.careTips.map((t: any) => sanitizeInput(String(t))) : [],
+
+    fertilizer: sanitizeInput(plant.fertilizer || ''),
+    soil: sanitizeInput(plant.soil || ''),
+    environmentTips: sanitizeInput(plant.environmentTips || ''),
+
+    wateringFrequencyDays: typeof plant.wateringFrequencyDays === 'number' ? plant.wateringFrequencyDays : 7,
+    sunTolerance: typeof plant.sunTolerance === 'string' ? plant.sunTolerance : "Meia-sombra", // Safe default
+    minTemp: typeof plant.minTemp === 'number' ? plant.minTemp : 10,
+    maxTemp: typeof plant.maxTemp === 'number' ? plant.maxTemp : 35,
+    lastWatered: typeof plant.lastWatered === 'number' ? plant.lastWatered : undefined,
+    wateringHistory: Array.isArray(plant.wateringHistory) ? plant.wateringHistory.filter((n: any) => typeof n === 'number') : [],
+    imageUrl: (plant.imageUrl && isSafeSrc(plant.imageUrl)) ? plant.imageUrl : undefined
+  } as Plant; // Casting as Plant because TS might complain about enum but we validated safely
+};
+
+/**
+ * Validates the UserProfile structure to ensure data integrity and security when loading from storage.
+ * Prevents loading corrupted or malicious state objects.
+ */
+export const validateUserProfile = (data: any): UserProfile | null => {
+  if (!data || typeof data !== 'object') return null;
+
+  // Check required fields types
+  if (typeof data.id !== 'string' || typeof data.name !== 'string') {
+    return null;
+  }
+
+  // Deeply sanitize plants
+  const safePlants: Plant[] = [];
+  if (Array.isArray(data.plants)) {
+    data.plants.forEach((p: any) => {
+      const clean = sanitizePlant(p);
+      if (clean) safePlants.push(clean);
+    });
+  }
+
+  // Sanitize achievements
+  const safeAchievements = Array.isArray(data.unlockedAchievements)
+    ? data.unlockedAchievements.filter((a: any) => typeof a === 'string').map((a: any) => sanitizeInput(a))
+    : [];
+
+  // Sanitize Location
+  let safeLocation: UserLocation | null = null;
+  if (data.location && typeof data.location === 'object') {
+     if (typeof data.location.latitude === 'number' && typeof data.location.longitude === 'number' && typeof data.location.city === 'string') {
+       safeLocation = {
+         latitude: data.location.latitude,
+         longitude: data.location.longitude,
+         city: sanitizeInput(data.location.city)
+       };
+     }
+  }
+
+  // Construct a clean object to discard any injected extra properties
+  const profile: UserProfile = {
+    id: sanitizeInput(data.id),
+    name: sanitizeInput(data.name),
+    dwellingType: (data.dwellingType === 'Casa' || data.dwellingType === 'Apartamento') ? data.dwellingType : undefined,
+    location: safeLocation,
+    plants: safePlants,
+    unlockedAchievements: safeAchievements
+  };
+
+  return profile;
+};
