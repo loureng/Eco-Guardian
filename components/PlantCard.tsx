@@ -104,6 +104,7 @@ export const PlantCard: React.FC<Props> = React.memo(({ plant, weather, onWater,
           }}
           className="absolute top-2 left-2 w-8 h-8 bg-black/20 hover:bg-red-500 backdrop-blur-sm rounded-full text-white flex items-center justify-center transition-colors z-10"
           title="Excluir planta"
+          aria-label={`Excluir ${plant.commonName}`}
         >
           <Trash2 size={14} />
         </button>
@@ -126,9 +127,15 @@ export const PlantCard: React.FC<Props> = React.memo(({ plant, weather, onWater,
             <h3 className="font-bold text-slate-900 text-lg leading-tight">{plant.commonName}</h3>
             <p className="text-xs text-slate-500 italic">{plant.scientificName}</p>
           </div>
-          <div className={`text-slate-400 p-1 hover:bg-slate-50 rounded-full transition-all duration-300 ${isExpanded ? 'rotate-180 bg-slate-50' : ''}`}>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
+            aria-expanded={isExpanded}
+            aria-label={isExpanded ? "Recolher detalhes" : "Ver detalhes"}
+            className={`text-slate-400 p-1 hover:bg-slate-50 rounded-full transition-all duration-300 ${isExpanded ? 'rotate-180 bg-slate-50' : ''}`}
+          >
             <ChevronDown size={20} />
-          </div>
+          </button>
         </div>
 
         {/* Daily Review Section (Alerts) */}
@@ -321,6 +328,7 @@ export const PlantCard: React.FC<Props> = React.memo(({ plant, weather, onWater,
                  }}
                  className="ml-1 p-1 hover:bg-emerald-50 text-emerald-600 rounded-md transition-colors"
                  title="Adicionar ao Calendário"
+                 aria-label={`Agendar rega para ${plant.commonName}`}
                >
                  <CalendarPlus size={14} />
                </button>
@@ -343,6 +351,7 @@ export const PlantCard: React.FC<Props> = React.memo(({ plant, weather, onWater,
             e.stopPropagation();
             onWater(plant.id);
           }}
+          aria-label={isUrgent ? `Regar ${plant.commonName} agora` : `Marcar rega para ${plant.commonName}`}
           className={`w-full mt-3 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2
             ${isUrgent 
               ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-200 active:scale-95' 
