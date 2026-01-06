@@ -388,17 +388,21 @@ const App: React.FC = () => {
             {view === 'dashboard' && (
               <button 
                 onClick={() => refreshWeather(user?.location || null, user?.plants)} 
-                className="p-2 text-slate-500 hover:text-emerald-600 hover:bg-slate-50 rounded-full transition-all"
+                disabled={weatherLoading}
+                className={`p-2 rounded-full transition-all ${weatherLoading ? 'bg-emerald-50 text-emerald-600 cursor-not-allowed' : 'text-slate-500 hover:text-emerald-600 hover:bg-slate-50'}`}
                 title="Atualizar Clima"
+                aria-label={weatherLoading ? "Atualizando clima..." : "Atualizar clima"}
               >
-                <RefreshCw size={20} className={weatherLoading ? "animate-spin text-emerald-600" : ""} />
+                <RefreshCw size={20} className={weatherLoading ? "animate-spin" : ""} />
               </button>
             )}
             
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className={`p-2 rounded-lg transition-colors ${isMenuOpen ? 'bg-slate-100 text-slate-800' : 'text-slate-600 hover:bg-slate-50'}`}
-              aria-label="Menu"
+              aria-label={isMenuOpen ? "Fechar menu" : "Abrir menu"}
+              aria-expanded={isMenuOpen}
+              aria-haspopup="true"
             >
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
