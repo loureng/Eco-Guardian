@@ -67,23 +67,6 @@ export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, 
     10 
   );
 
-  const getAlertStyle = (type: string) => {
-    switch(type) {
-      case 'danger': return 'bg-red-50 text-red-700 border-red-100';
-      case 'warning': return 'bg-amber-50 text-amber-700 border-amber-100';
-      case 'success': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-      default: return 'bg-blue-50 text-blue-700 border-blue-100';
-    }
-  };
-
-  const getAlertIcon = (type: string) => {
-    switch(type) {
-      case 'danger': return <AlertTriangle size={14} />;
-      case 'success': return <CheckCircle2 size={14} />;
-      default: return <Info size={14} />;
-    }
-  };
-
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-md transition-shadow group relative">
       {/* Header Image Area - Clickable */}
@@ -310,7 +293,7 @@ export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, 
            <div className="flex flex-col">
              <span className="font-medium text-slate-700">Próxima Rega</span>
              <span className="flex items-center gap-1">
-               {new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' }).format(schedule.nextDate)}
+               {DATE_FORMATTER.format(schedule.nextDate)}
                
                <button 
                  onClick={(e) => {
