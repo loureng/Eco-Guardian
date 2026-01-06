@@ -2,7 +2,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UserProfile, ChatMessage } from '../types';
 import { sendChatMessage } from '../services/geminiService';
-import { isSafeUrl } from '../services/security/security';
 import { MessageCircle, X, Send, MapPin, Globe, Loader2, Bot } from 'lucide-react';
 
 interface Props {
@@ -94,7 +93,7 @@ export const Chatbot: React.FC<Props> = ({ user }) => {
                   {msg.groundingChunks && msg.groundingChunks.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-2 max-w-[90%]">
                       {msg.groundingChunks.map((chunk, idx) => {
-                        if (chunk.web && isSafeUrl(chunk.web.uri)) {
+                        if (chunk.web) {
                           return (
                             <a key={idx} href={chunk.web.uri} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-md border border-blue-100 hover:bg-blue-100 transition-colors">
                               <Globe size={10} />
@@ -102,7 +101,7 @@ export const Chatbot: React.FC<Props> = ({ user }) => {
                             </a>
                           );
                         }
-                        if (chunk.maps && isSafeUrl(chunk.maps.uri)) {
+                        if (chunk.maps) {
                           return (
                             <a key={idx} href={chunk.maps.uri} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[10px] bg-orange-50 text-orange-600 px-2 py-1 rounded-md border border-orange-100 hover:bg-orange-100 transition-colors">
                               <MapPin size={10} />

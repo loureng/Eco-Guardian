@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserProfile, Plant, UserLocation, WeatherData, SunTolerance, Achievement, DwellingType } from './types';
 import { loadUser, saveUser } from './services/storageService';
 import { identifyPlant, getPlantDetailsByName, generatePlantImage } from './services/geminiService';
@@ -92,19 +92,6 @@ const App: React.FC = () => {
       requestNotificationPermission(); 
     }
   }, []);
-
-  // ⚡ Bolt Optimization: Ref to access weather in callbacks without dependency
-  const weatherRef = useRef(weather);
-  useEffect(() => {
-    weatherRef.current = weather;
-  }, [weather]);
-
-  // ⚡ Bolt Optimization: Ref to access user in callbacks without dependency
-  // This prevents handleWater from being recreated on every user change (e.g. watering one plant)
-  const userRef = useRef(user);
-  useEffect(() => {
-    userRef.current = user;
-  }, [user]);
 
   // Save user changes
   useEffect(() => {
@@ -269,24 +256,20 @@ const App: React.FC = () => {
     refreshWeather(user.location, updatedPlants);
   };
 
-  const handleWater = useCallback((id: string) => {
-    // ⚡ Bolt Optimization: Use ref to access latest user state without dependency
-    const currentUser = userRef.current;
-    if(!currentUser) return;
-
+  const handleWater = (id: string) => {
+    if(!user) return;
     const now = Date.now();
-    const updatedPlants = currentUser.plants.map(p => p.id === id ? { ...p, lastWatered: now, wateringHistory: [...(p.wateringHistory || []), now] } : p);
-    const updatedUser = { ...currentUser, plants: updatedPlants };
-
+    const updatedPlants = user.plants.map(p => p.id === id ? { ...p, lastWatered: now, wateringHistory: [...(p.wateringHistory || []), now] } : p);
+    const updatedUser = { ...user, plants: updatedPlants };
     const unlocked = checkNewAchievements(updatedUser, 'WATERED');
     if (unlocked.length > 0) {
       updatedUser.unlockedAchievements = [...(updatedUser.unlockedAchievements || []), ...unlocked.map(a => a.id)];
       setNewAchievement(unlocked[0]);
     }
     setUser(updatedUser);
-  }, []); // Dependencies removed to keep handler stable
+  };
 
-  const handleDeleteRequest = useCallback((id: string) => setPlantToDelete(id), []);
+  const handleDeleteRequest = (id: string) => setPlantToDelete(id);
   
   const confirmDelete = () => {
     if (!user || !plantToDelete) return;
@@ -295,10 +278,10 @@ const App: React.FC = () => {
     setPlantToDelete(null);
   };
 
-  const handleScheduleRequest = useCallback((plant: Plant, date: Date) => {
+  const handleScheduleRequest = (plant: Plant, date: Date) => {
     setPlantToSchedule({ plant, date });
     setCalendarModalOpen(true);
-  }, []);
+  };
 
   const resetAddPlant = () => {
     setCapturedImage(null);
@@ -326,7 +309,6 @@ const App: React.FC = () => {
            <div className="flex gap-2">
              <button 
                onClick={() => setSelectedDwelling('Casa')}
-               aria-pressed={selectedDwelling === 'Casa'}
                className={`flex-1 flex flex-col items-center p-3 rounded-lg border-2 transition-all ${selectedDwelling === 'Casa' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-100 text-slate-400 hover:border-emerald-200'}`}
              >
                 <Home size={24} className="mb-1" />
@@ -334,7 +316,6 @@ const App: React.FC = () => {
              </button>
              <button 
                onClick={() => setSelectedDwelling('Apartamento')}
-               aria-pressed={selectedDwelling === 'Apartamento'}
                className={`flex-1 flex flex-col items-center p-3 rounded-lg border-2 transition-all ${selectedDwelling === 'Apartamento' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-100 text-slate-400 hover:border-emerald-200'}`}
              >
                 <Building size={24} className="mb-1" />
@@ -411,7 +392,6 @@ const App: React.FC = () => {
             <nav className="max-w-3xl mx-auto p-2 flex flex-col gap-1">
               <button 
                 onClick={() => navigateTo('dashboard')}
-                aria-current={view === 'dashboard' ? 'page' : undefined}
                 className={`flex items-center justify-between p-4 rounded-xl text-left ${view === 'dashboard' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
               >
                 <div className="flex items-center gap-3">
@@ -423,7 +403,6 @@ const App: React.FC = () => {
 
               <button 
                 onClick={() => navigateTo('agenda')}
-                aria-current={view === 'agenda' ? 'page' : undefined}
                 className={`flex items-center justify-between p-4 rounded-xl text-left ${view === 'agenda' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
               >
                 <div className="flex items-center gap-3">
@@ -435,7 +414,6 @@ const App: React.FC = () => {
 
               <button 
                 onClick={() => navigateTo('add-plant')}
-                aria-current={view === 'add-plant' ? 'page' : undefined}
                 className={`flex items-center justify-between p-4 rounded-xl text-left ${view === 'add-plant' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
               >
                 <div className="flex items-center gap-3">
@@ -447,7 +425,6 @@ const App: React.FC = () => {
 
               <button 
                 onClick={() => navigateTo('profile')}
-                aria-current={view === 'profile' ? 'page' : undefined}
                 className={`flex items-center justify-between p-4 rounded-xl text-left ${view === 'profile' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
               >
                 <div className="flex items-center gap-3">
@@ -521,7 +498,6 @@ const App: React.FC = () => {
                   {/* Card to add new plant inline */}
                   <button 
                     onClick={() => navigateTo('add-plant')}
-                    aria-label="Adicionar nova planta"
                     className="min-h-[300px] rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-3 text-slate-400 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50/50 transition-all group"
                   >
                     <div className="w-12 h-12 rounded-full bg-slate-100 group-hover:bg-emerald-100 flex items-center justify-center transition-colors">
@@ -560,12 +536,11 @@ const App: React.FC = () => {
                 {/* Cards Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Option 1: Camera */}
-                  <div className="relative overflow-hidden group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer focus-within:ring-2 focus-within:ring-emerald-500 focus-within:ring-offset-2">
+                  <div className="relative overflow-hidden group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer">
                     <input 
                       type="file" 
                       accept="image/*" 
                       capture="environment"
-                      aria-label="Tirar foto ou escolher da galeria"
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                       onChange={handleImageUpload}
                     />
@@ -588,14 +563,12 @@ const App: React.FC = () => {
                          value={searchName}
                          onChange={(e) => setSearchName(e.target.value)}
                          placeholder="Ex: Jiboia"
-                         aria-label="Nome da planta para busca"
                          className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-emerald-500"
                        />
                        <Button 
                          onClick={handleNameSearch} 
                          disabled={!searchName.trim() || isAnalyzing}
                          className="w-auto px-4 py-2"
-                         aria-label="Buscar planta"
                        >
                           <Search size={18} />
                        </Button>
