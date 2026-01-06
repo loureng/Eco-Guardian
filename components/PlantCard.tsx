@@ -7,7 +7,6 @@ import {
   Wind, Sprout, Layers
 } from 'lucide-react';
 import { checkPlantHealth, calculateSmartWatering } from '../services/plantLogic';
-import { isSafeSrc } from '../services/security/security';
 
 interface Props {
   plant: Plant;
@@ -17,33 +16,11 @@ interface Props {
   onSchedule: (plant: Plant, date: Date) => void;
 }
 
-// ⚡ Bolt Optimization: Hoist static formatter to prevent recreation on every render
-const DATE_FORMATTER = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' });
-
-// ⚡ Bolt Optimization: Hoist helper functions outside component to avoid recreation
-const getAlertStyle = (type: string) => {
-  switch(type) {
-    case 'danger': return 'bg-red-50 text-red-700 border-red-100';
-    case 'warning': return 'bg-amber-50 text-amber-700 border-amber-100';
-    case 'success': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-    default: return 'bg-blue-50 text-blue-700 border-blue-100';
-  }
-};
-
-const getAlertIcon = (type: string) => {
-  switch(type) {
-    case 'danger': return <AlertTriangle size={14} />;
-    case 'success': return <CheckCircle2 size={14} />;
-    default: return <Info size={14} />;
-  }
-};
-
-export const PlantCard: React.FC<Props> = React.memo(({ plant, weather, onWater, onDelete, onSchedule }) => {
+export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, onSchedule }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
   // Real-time Logic Calculation (Daily Review)
-  // ⚡ Bolt: Memoized to prevent recalculation when toggling card expansion (internal state change)
-  const activeAlerts = useMemo(() => checkPlantHealth(plant, weather), [plant, weather]);
+  const activeAlerts = checkPlantHealth(plant, weather);
   
   // Calculate Smart Schedule based on full meteorology
   const schedule = useMemo(() => calculateSmartWatering(plant, weather), [plant, weather]);
@@ -95,7 +72,7 @@ export const PlantCard: React.FC<Props> = React.memo(({ plant, weather, onWater,
       {/* Header Image Area - Clickable */}
       <div className="relative h-40 bg-slate-100 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
         <img 
-          src={isSafeSrc(plant.imageUrl || "") ? plant.imageUrl : "https://picsum.photos/400/300"}
+          src={plant.imageUrl || "https://picsum.photos/400/300"} 
           alt={plant.commonName} 
           className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
         />
@@ -108,7 +85,6 @@ export const PlantCard: React.FC<Props> = React.memo(({ plant, weather, onWater,
           }}
           className="absolute top-2 left-2 w-8 h-8 bg-black/20 hover:bg-red-500 backdrop-blur-sm rounded-full text-white flex items-center justify-center transition-colors z-10"
           title="Excluir planta"
-          aria-label={`Excluir ${plant.commonName}`}
         >
           <Trash2 size={14} />
         </button>
@@ -131,15 +107,9 @@ export const PlantCard: React.FC<Props> = React.memo(({ plant, weather, onWater,
             <h3 className="font-bold text-slate-900 text-lg leading-tight">{plant.commonName}</h3>
             <p className="text-xs text-slate-500 italic">{plant.scientificName}</p>
           </div>
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
-            aria-expanded={isExpanded}
-            aria-label={isExpanded ? "Recolher detalhes" : "Ver detalhes"}
-            className={`text-slate-400 p-1 hover:bg-slate-50 rounded-full transition-all duration-300 ${isExpanded ? 'rotate-180 bg-slate-50' : ''}`}
-          >
+          <div className={`text-slate-400 p-1 hover:bg-slate-50 rounded-full transition-all duration-300 ${isExpanded ? 'rotate-180 bg-slate-50' : ''}`}>
             <ChevronDown size={20} />
-          </button>
+          </div>
         </div>
 
         {/* Daily Review Section (Alerts) */}
@@ -332,7 +302,6 @@ export const PlantCard: React.FC<Props> = React.memo(({ plant, weather, onWater,
                  }}
                  className="ml-1 p-1 hover:bg-emerald-50 text-emerald-600 rounded-md transition-colors"
                  title="Adicionar ao Calendário"
-                 aria-label={`Agendar rega para ${plant.commonName}`}
                >
                  <CalendarPlus size={14} />
                </button>
@@ -355,7 +324,6 @@ export const PlantCard: React.FC<Props> = React.memo(({ plant, weather, onWater,
             e.stopPropagation();
             onWater(plant.id);
           }}
-          aria-label={isUrgent ? `Regar ${plant.commonName} agora` : `Marcar rega para ${plant.commonName}`}
           className={`w-full mt-3 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2
             ${isUrgent 
               ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-200 active:scale-95' 
@@ -370,4 +338,4 @@ export const PlantCard: React.FC<Props> = React.memo(({ plant, weather, onWater,
       `}</style>
     </div>
   );
-});
+};
