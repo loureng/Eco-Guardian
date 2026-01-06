@@ -27,6 +27,7 @@ export const ErrorNotification: React.FC<Props> = ({ message, onClose }) => {
         </div>
         <button 
           onClick={onClose} 
+          aria-label="Fechar notificação"
           className="text-red-400 hover:text-red-600 p-1 hover:bg-red-100 rounded-lg transition-colors"
         >
           <X size={18} />
