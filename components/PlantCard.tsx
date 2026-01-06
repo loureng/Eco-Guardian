@@ -7,7 +7,6 @@ import {
   Wind, Sprout, Layers
 } from 'lucide-react';
 import { checkPlantHealth, calculateSmartWatering } from '../services/plantLogic';
-import { isSafeSrc } from '../services/security/security';
 
 interface Props {
   plant: Plant;
@@ -17,7 +16,7 @@ interface Props {
   onSchedule: (plant: Plant, date: Date) => void;
 }
 
-export const PlantCard: React.FC<Props> = React.memo(({ plant, weather, onWater, onDelete, onSchedule }) => {
+export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, onSchedule }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
   // Real-time Logic Calculation (Daily Review)
@@ -68,29 +67,12 @@ export const PlantCard: React.FC<Props> = React.memo(({ plant, weather, onWater,
     10 
   );
 
-  const getAlertStyle = (type: string) => {
-    switch(type) {
-      case 'danger': return 'bg-red-50 text-red-700 border-red-100';
-      case 'warning': return 'bg-amber-50 text-amber-700 border-amber-100';
-      case 'success': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-      default: return 'bg-blue-50 text-blue-700 border-blue-100';
-    }
-  };
-
-  const getAlertIcon = (type: string) => {
-    switch(type) {
-      case 'danger': return <AlertTriangle size={14} />;
-      case 'success': return <CheckCircle2 size={14} />;
-      default: return <Info size={14} />;
-    }
-  };
-
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-md transition-shadow group relative">
       {/* Header Image Area - Clickable */}
       <div className="relative h-40 bg-slate-100 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
         <img 
-          src={isSafeSrc(plant.imageUrl || "") ? plant.imageUrl : "https://picsum.photos/400/300"}
+          src={plant.imageUrl || "https://picsum.photos/400/300"} 
           alt={plant.commonName} 
           className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
         />
@@ -311,7 +293,7 @@ export const PlantCard: React.FC<Props> = React.memo(({ plant, weather, onWater,
            <div className="flex flex-col">
              <span className="font-medium text-slate-700">Próxima Rega</span>
              <span className="flex items-center gap-1">
-               {new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' }).format(schedule.nextDate)}
+               {DATE_FORMATTER.format(schedule.nextDate)}
                
                <button 
                  onClick={(e) => {
@@ -356,4 +338,4 @@ export const PlantCard: React.FC<Props> = React.memo(({ plant, weather, onWater,
       `}</style>
     </div>
   );
-});
+};

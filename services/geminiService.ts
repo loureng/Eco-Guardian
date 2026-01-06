@@ -1,7 +1,6 @@
 import { GoogleGenAI, Type, Schema, Content } from "@google/genai";
 import { Plant, SunTolerance, ChatMessage, UserProfile } from "../types";
 import { PLANT_IDENTIFICATION_PROMPT, PLANT_DETAILS_PROMPT } from "../constants";
-import { sanitizeInput } from "./security/security";
 
 const getGeminiClient = () => {
   const apiKey = process.env.API_KEY;
@@ -36,24 +35,28 @@ const plantSchema: Schema = {
   required: ["scientificName", "commonName", "wateringFrequencyDays", "sunTolerance", "minTemp", "maxTemp"],
 };
 
+const sanitizeString = (val: any): string => {
+  if (val === null || val === undefined) return "";
+  if (typeof val === 'string') return val.trim();
+  if (typeof val === 'number') return String(val);
+  return ""; 
+};
+
 const sanitizeNumber = (val: any, defaultVal: number): number => {
   const num = Number(val);
   return isNaN(num) ? defaultVal : num;
 };
 
 const sanitizeArray = (val: any): string[] => {
-  if (Array.isArray(val)) return val.map(v => sanitizeInput(v));
+  if (Array.isArray(val)) return val.map(v => sanitizeString(v));
   return [];
 };
 
 export const identifyPlant = async (base64Image: string): Promise<Partial<Plant>> => {
   try {
     const ai = getGeminiClient();
-    
-    // Clean base64 string if it contains metadata
     const cleanBase64 = base64Image.replace(/^data:image\/(png|jpeg|jpg|webp);base64,/, "");
 
-    // Using Standard Flash for Vision tasks
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash", 
       contents: {
@@ -71,26 +74,24 @@ export const identifyPlant = async (base64Image: string): Promise<Partial<Plant>
 
     const text = response.text;
     if (!text) throw new Error("Sem resposta do Gemini");
-
     const data = JSON.parse(text);
 
     return {
-      scientificName: sanitizeInput(data.scientificName),
-      commonName: sanitizeInput(data.commonName),
-      category: sanitizeInput(data.category) || "Geral",
-      description: sanitizeInput(data.description),
-      origin: sanitizeInput(data.origin),
+      scientificName: sanitizeString(data.scientificName),
+      commonName: sanitizeString(data.commonName),
+      category: sanitizeString(data.category) || "Geral",
+      description: sanitizeString(data.description),
+      origin: sanitizeString(data.origin),
       careTips: sanitizeArray(data.careTips),
       wateringFrequencyDays: sanitizeNumber(data.wateringFrequencyDays, 7),
       sunTolerance: (Object.values(SunTolerance).includes(data.sunTolerance) ? data.sunTolerance : SunTolerance.PARTIAL) as SunTolerance,
       minTemp: sanitizeNumber(data.minTemp, 10),
       maxTemp: sanitizeNumber(data.maxTemp, 30),
-      fertilizer: sanitizeInput(data.fertilizer),
-      soil: sanitizeInput(data.soil),
-      environmentTips: sanitizeInput(data.environmentTips),
+      fertilizer: sanitizeString(data.fertilizer),
+      soil: sanitizeString(data.soil),
+      environmentTips: sanitizeString(data.environmentTips),
       wateringHistory: []
     };
-
   } catch (error) {
     console.error("Erro na identificação Gemini:", error);
     throw error;
@@ -102,7 +103,6 @@ export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant
     const ai = getGeminiClient();
     const prompt = PLANT_DETAILS_PROMPT.replace("{{NAME}}", name);
 
-    // Using Flash Lite for faster text response
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-lite",
       contents: {
@@ -117,23 +117,22 @@ export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant
 
     const text = response.text;
     if (!text) throw new Error("Sem resposta do Gemini");
-
     const data = JSON.parse(text);
 
     return {
-      scientificName: sanitizeInput(data.scientificName),
-      commonName: sanitizeInput(data.commonName),
-      category: sanitizeInput(data.category) || "Geral",
-      description: sanitizeInput(data.description),
-      origin: sanitizeInput(data.origin),
+      scientificName: sanitizeString(data.scientificName),
+      commonName: sanitizeString(data.commonName),
+      category: sanitizeString(data.category) || "Geral",
+      description: sanitizeString(data.description),
+      origin: sanitizeString(data.origin),
       careTips: sanitizeArray(data.careTips),
       wateringFrequencyDays: sanitizeNumber(data.wateringFrequencyDays, 7),
       sunTolerance: (Object.values(SunTolerance).includes(data.sunTolerance) ? data.sunTolerance : SunTolerance.PARTIAL) as SunTolerance,
       minTemp: sanitizeNumber(data.minTemp, 10),
       maxTemp: sanitizeNumber(data.maxTemp, 30),
-      fertilizer: sanitizeInput(data.fertilizer),
-      soil: sanitizeInput(data.soil),
-      environmentTips: sanitizeInput(data.environmentTips),
+      fertilizer: sanitizeString(data.fertilizer),
+      soil: sanitizeString(data.soil),
+      environmentTips: sanitizeString(data.environmentTips),
       wateringHistory: []
     };
   } catch (error) {
@@ -145,35 +144,37 @@ export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant
 export const generatePlantImage = async (plantName: string): Promise<string | null> => {
   try {
     const ai = getGeminiClient();
-    // Prompt atualizado para focar ESTRITAMENTE na planta e aplicar o efeito de fundo bokeh
-    const prompt = `A cinematic, photorealistic botanical shot of the plant: ${plantName}.
-    CRITICAL: This is a PLANT. Focus entirely on the foliage and unique characteristics of the species. DO NOT SHOW ANIMALS.
-    Composition: A clear, centered close-up view of the plant.
-    Background: A soft, blurred (bokeh) environment reflecting its natural origin (e.g., tropical rainforest, desert, mountains). The background should be atmospheric and opaque to highlight the plant.
-    Lighting: Soft natural light, golden hour, high contrast, 4k resolution.`;
+    
+    // Prompt aprimorado para estética, profundidade e precisão botânica
+    const prompt = `A professional, high-end botanical portrait of the plant species: ${plantName}. 
+    STYLE: Photorealistic macro photography with shallow depth of field.
+    SUBJECT: Focus strictly on the vibrant green leaves, stems, and natural textures of the plant. 
+    CONSTRAINT: This is a botanical houseplant. DO NOT include any animals, snakes, or non-botanical objects.
+    BACKGROUND: An artistic, heavily blurred (bokeh) representation of the plant's native habitat (e.g., misty tropical rainforest, sun-drenched coastal area, or lush greenhouse). The background should feel deep and atmospheric but remains out of focus to make the plant pop.
+    LIGHTING: Soft cinematic natural light, warm morning glow, high detail, 4k resolution.`;
 
-    const response = await ai.models.generateImages({
-      model: 'imagen-4.0-generate-001',
-      prompt: prompt,
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: [{ parts: [{ text: prompt }] }],
       config: {
-        numberOfImages: 1,
-        outputMimeType: 'image/jpeg',
-        aspectRatio: '1:1',
-      },
+        imageConfig: {
+          aspectRatio: "1:1"
+        }
+      }
     });
 
-    const base64String = response.generatedImages?.[0]?.image?.imageBytes;
-    if (base64String) {
-      return `data:image/jpeg;base64,${base64String}`;
+    for (const part of response.candidates?.[0]?.content?.parts || []) {
+      if (part.inlineData) {
+        return `data:image/png;base64,${part.inlineData.data}`;
+      }
     }
+    
     return null;
   } catch (error) {
     console.error("Erro ao gerar imagem da planta:", error);
     return null;
   }
 };
-
-// --- Chatbot Logic ---
 
 export const sendChatMessage = async (
   history: ChatMessage[], 
@@ -182,8 +183,6 @@ export const sendChatMessage = async (
 ): Promise<{ text: string, groundingChunks?: any[] }> => {
   try {
     const ai = getGeminiClient();
-    
-    // Construct System Instruction with Context
     let systemInstruction = "Você é o EcoGuardian, um especialista amigável em plantas. Responda em Português do Brasil.";
     
     if (userProfile) {
@@ -192,32 +191,12 @@ export const sendChatMessage = async (
       systemInstruction += `\nLocalização: ${userProfile.location?.city || 'Desconhecida'}.`;
       if (plantNames) {
         systemInstruction += `\nPlantas do usuário: ${plantNames}.`;
-      } else {
-        systemInstruction += `\nO usuário ainda não tem plantas cadastradas.`;
       }
-      systemInstruction += `\nSe o usuário perguntar "onde comprar" ou lojas, use o Google Maps. Para cuidados gerais ou novidades, use o Google Search.`;
-    }
-
-    // Configuração das ferramentas
-    const config: any = {
-      systemInstruction: systemInstruction,
-      tools: [{ googleSearch: {} }, { googleMaps: {} }],
-    };
-
-    // Adiciona localização para Grounding se disponível
-    if (userProfile?.location) {
-      config.toolConfig = {
-        retrievalConfig: {
-          latLng: {
-            latitude: userProfile.location.latitude,
-            longitude: userProfile.location.longitude
-          }
-        }
-      };
+      systemInstruction += `\nUse Google Maps para lojas e Google Search para curiosidades.`;
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash", // Utilizando Flash para suporte a Tools (Maps/Search)
+      model: "gemini-2.5-flash", 
       contents: [
         ...history.filter(h => h.role !== 'model').map(h => ({
            role: 'user',
@@ -225,17 +204,18 @@ export const sendChatMessage = async (
         })),
         { role: 'user', parts: [{ text: newMessage }] }
       ],
-      config: config
+      config: {
+        systemInstruction: systemInstruction,
+        tools: [{ googleSearch: {} }, { googleMaps: {} }],
+      }
     });
 
-    // Extract Grounding Data
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
     
     return {
       text: response.text || "Desculpe, não consegui processar sua resposta.",
       groundingChunks
     };
-
   } catch (error) {
     console.error("Chat error:", error);
     return { text: "Ocorreu um erro ao conectar com o assistente inteligente." };

@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useId } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plant, SunTolerance } from '../types';
 import { Button } from './Button';
 import { Edit2, Check, Search, Loader2, AlertCircle, Camera, X, Wind, Layers, Sprout } from 'lucide-react';
 import { getPlantDetailsByName, identifyPlant } from '../services/geminiService';
-import { sanitizeInput } from '../services/security/security';
 
 interface Props {
   initialData: Partial<Plant>;
@@ -38,9 +37,6 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
   const [isSearching, setIsSearching] = useState(false);
   const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
-
-  // Accessible ID generation
-  const formId = useId();
 
   useEffect(() => {
     setFormData(initialData);
@@ -151,23 +147,7 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
   const handleSave = () => {
     // Garante que a imagem local (possivelmente atualizada) seja enviada
     // E garante que campos extras da AI (descrição, origem, tips, fertilizer, soil, environment) sejam passados
-
-    // Sanitize user-editable string fields before saving
-    const sanitizedData = {
-        ...formData,
-        commonName: sanitizeInput(formData.commonName || ''),
-        scientificName: sanitizeInput(formData.scientificName || ''),
-        category: sanitizeInput(formData.category || ''),
-        description: sanitizeInput(formData.description || ''),
-        origin: sanitizeInput(formData.origin || ''),
-        careTips: (formData.careTips || []).map(tip => sanitizeInput(tip)),
-        fertilizer: sanitizeInput(formData.fertilizer || ''),
-        soil: sanitizeInput(formData.soil || ''),
-        environmentTips: sanitizeInput(formData.environmentTips || ''),
-        imageUrl: localImage
-    };
-
-    onSave(sanitizedData);
+    onSave({ ...formData, imageUrl: localImage });
   };
 
   if (!isEditing) {
@@ -183,28 +163,28 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
         
         <div className="space-y-3 text-slate-700">
            <div>
-             <span className="text-xs font-bold uppercase text-slate-400 block">Nome Popular</span>
+             <label className="text-xs font-bold uppercase text-slate-400">Nome Popular</label>
              <p className="font-medium text-lg">{formData.commonName}</p>
            </div>
            <div>
-             <span className="text-xs font-bold uppercase text-slate-400 block">Nome Científico</span>
+             <label className="text-xs font-bold uppercase text-slate-400">Nome Científico</label>
              <p className="italic">{formData.scientificName}</p>
            </div>
            
            {formData.description && (
              <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-100">
-               <span className="text-xs font-bold uppercase text-emerald-700 block">Sobre</span>
+               <label className="text-xs font-bold uppercase text-emerald-700">Sobre</label>
                <p className="text-sm italic text-emerald-900 mt-1">{formData.description}</p>
              </div>
            )}
 
            <div className="grid grid-cols-2 gap-4">
              <div>
-                <span className="text-xs font-bold uppercase text-slate-400 block">Categoria</span>
+                <label className="text-xs font-bold uppercase text-slate-400">Categoria</label>
                 <p className="text-sm">{formData.category || "Geral"}</p>
              </div>
              <div>
-                <span className="text-xs font-bold uppercase text-slate-400 block">Regar a cada</span>
+                <label className="text-xs font-bold uppercase text-slate-400">Regar a cada</label>
                 <p className="text-sm">{formData.wateringFrequencyDays} dias</p>
              </div>
            </div>
@@ -266,10 +246,9 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
         
         {/* Opção 1: Texto */}
         <div>
-          <label htmlFor={`${formId}-search`} className="block text-xs font-bold uppercase text-emerald-700 mb-2">Preencher com IA (Texto)</label>
+          <label className="block text-xs font-bold uppercase text-emerald-700 mb-2">Preencher com IA (Texto)</label>
           <div className="flex gap-2">
             <input 
-              id={`${formId}-search`}
               className={`flex-1 p-2 border border-emerald-200 rounded-lg text-sm focus:outline-emerald-500 transition-colors ${isSearching ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white'}`}
               placeholder="Digite o nome da planta..."
               value={searchQuery}
@@ -280,7 +259,6 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
             <button 
               onClick={handleSearch}
               disabled={isSearching || isAnalyzingImage || !searchQuery.trim()}
-              aria-label="Buscar dados da planta"
               className="bg-emerald-600 text-white px-3 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all min-w-[44px] flex items-center justify-center"
             >
               {isSearching ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
@@ -296,17 +274,16 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
 
         {/* Opção 2: Foto */}
         <div>
-           <label htmlFor={`${formId}-photo`} className="block text-xs font-bold uppercase text-emerald-700 mb-2">Identificar por Foto</label>
+           <label className="block text-xs font-bold uppercase text-emerald-700 mb-2">Identificar por Foto</label>
            <div className="relative">
              <input 
-                id={`${formId}-photo`}
                 type="file" 
                 accept="image/*" 
                 onChange={handleImageAutoFill}
                 disabled={isSearching || isAnalyzingImage}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 peer"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
              />
-             <button className="w-full flex items-center justify-center gap-2 bg-white border border-emerald-200 text-emerald-700 py-2 rounded-lg hover:bg-emerald-100 transition-colors font-medium text-sm peer-focus:ring-2 peer-focus:ring-emerald-500 peer-focus:ring-offset-2">
+             <button className="w-full flex items-center justify-center gap-2 bg-white border border-emerald-200 text-emerald-700 py-2 rounded-lg hover:bg-emerald-100 transition-colors font-medium text-sm">
                 {isAnalyzingImage ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
                 {isAnalyzingImage ? "Analisando Imagem..." : "Tirar Foto / Galeria"}
              </button>
@@ -324,9 +301,8 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
 
       <div className="space-y-3">
         <div>
-          <label htmlFor={`${formId}-commonName`} className="block text-xs font-bold uppercase text-slate-500 mb-1">Nome Popular</label>
+          <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Nome Popular</label>
           <input 
-            id={`${formId}-commonName`}
             className="w-full p-2 border border-slate-200 rounded-lg"
             value={formData.commonName || ''}
             onChange={e => handleChange('commonName', e.target.value)}
@@ -335,9 +311,8 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
         </div>
         
         <div>
-          <label htmlFor={`${formId}-scientificName`} className="block text-xs font-bold uppercase text-slate-500 mb-1">Nome Científico</label>
+          <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Nome Científico</label>
           <input 
-            id={`${formId}-scientificName`}
             className="w-full p-2 border border-slate-200 rounded-lg italic"
             value={formData.scientificName || ''}
             onChange={e => handleChange('scientificName', e.target.value)}
@@ -347,11 +322,10 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
 
         {/* Category Selection Field */}
         <div>
-           <label htmlFor={`${formId}-category`} className="block text-xs font-bold uppercase text-slate-500 mb-1">Categoria</label>
+           <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Categoria</label>
            
            {!isCustomCategory ? (
              <select 
-               id={`${formId}-category`}
                className="w-full p-2 border border-slate-200 rounded-lg bg-white"
                value={CATEGORIES.includes(formData.category || "") ? formData.category : (formData.category ? "custom" : "")}
                onChange={(e) => {
@@ -373,7 +347,6 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
            ) : (
              <div className="flex gap-2 animate-[fadeIn_0.2s_ease-out]">
                <input 
-                 id={`${formId}-category-custom`}
                  className="flex-1 p-2 border border-slate-200 rounded-lg"
                  placeholder="Digite a categoria (ex: Orquídea)..."
                  value={formData.category || ''}
@@ -391,7 +364,6 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
                  }}
                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg"
                  title="Voltar para lista"
-                 aria-label="Voltar para lista de categorias"
                >
                  <X size={20} />
                </button>
@@ -401,9 +373,8 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor={`${formId}-watering`} className="block text-xs font-bold uppercase text-slate-500 mb-1">Frequência de Rega (Dias)</label>
+            <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Frequência de Rega (Dias)</label>
             <input 
-              id={`${formId}-watering`}
               type="number"
               min="1"
               placeholder="Ex: 7"
@@ -413,9 +384,8 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
             />
           </div>
           <div>
-             <label htmlFor={`${formId}-sun`} className="block text-xs font-bold uppercase text-slate-500 mb-1">Sol</label>
+             <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Sol</label>
              <select 
-               id={`${formId}-sun`}
                className="w-full p-2 border border-slate-200 rounded-lg bg-white"
                value={formData.sunTolerance || SunTolerance.PARTIAL}
                onChange={e => handleChange('sunTolerance', e.target.value)}
@@ -429,32 +399,19 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
 
         <div className="grid grid-cols-2 gap-3">
            <div>
-             <label htmlFor={`${formId}-minTemp`} className="block text-xs font-bold uppercase text-slate-500 mb-1">Min Temp (°C)</label>
-             <input
-               id={`${formId}-minTemp`}
-               type="number"
-               className="w-full p-2 border border-slate-200 rounded-lg"
-               value={formData.minTemp || 0}
-               onChange={e => handleChange('minTemp', parseInt(e.target.value))}
-             />
+             <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Min Temp (°C)</label>
+             <input type="number" className="w-full p-2 border border-slate-200 rounded-lg" value={formData.minTemp || 0} onChange={e => handleChange('minTemp', parseInt(e.target.value))} />
            </div>
            <div>
-             <label htmlFor={`${formId}-maxTemp`} className="block text-xs font-bold uppercase text-slate-500 mb-1">Máx Temp (°C)</label>
-             <input
-               id={`${formId}-maxTemp`}
-               type="number"
-               className="w-full p-2 border border-slate-200 rounded-lg"
-               value={formData.maxTemp || 35}
-               onChange={e => handleChange('maxTemp', parseInt(e.target.value))}
-             />
+             <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Máx Temp (°C)</label>
+             <input type="number" className="w-full p-2 border border-slate-200 rounded-lg" value={formData.maxTemp || 35} onChange={e => handleChange('maxTemp', parseInt(e.target.value))} />
            </div>
         </div>
 
         {/* New Field: Environment Tips */}
         <div>
-          <label htmlFor={`${formId}-envTips`} className="block text-xs font-bold uppercase text-slate-500 mb-1">Dicas de Ambiente (Ventilação/Chuva)</label>
+          <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Dicas de Ambiente (Ventilação/Chuva)</label>
           <input 
-            id={`${formId}-envTips`}
             className="w-full p-2 border border-slate-200 rounded-lg"
             value={formData.environmentTips || ''}
             onChange={e => handleChange('environmentTips', e.target.value)}

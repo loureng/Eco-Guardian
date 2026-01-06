@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserProfile, Plant, UserLocation, WeatherData, SunTolerance, Achievement, DwellingType } from './types';
 import { loadUser, saveUser } from './services/storageService';
 import { identifyPlant, getPlantDetailsByName, generatePlantImage } from './services/geminiService';
@@ -92,12 +92,6 @@ const App: React.FC = () => {
       requestNotificationPermission(); 
     }
   }, []);
-
-  // ⚡ Bolt Optimization: Ref to access weather in callbacks without dependency
-  const weatherRef = useRef(weather);
-  useEffect(() => {
-    weatherRef.current = weather;
-  }, [weather]);
 
   // Save user changes
   useEffect(() => {
@@ -262,7 +256,7 @@ const App: React.FC = () => {
     refreshWeather(user.location, updatedPlants);
   };
 
-  const handleWater = useCallback((id: string) => {
+  const handleWater = (id: string) => {
     if(!user) return;
     const now = Date.now();
     const updatedPlants = user.plants.map(p => p.id === id ? { ...p, lastWatered: now, wateringHistory: [...(p.wateringHistory || []), now] } : p);
@@ -273,9 +267,9 @@ const App: React.FC = () => {
       setNewAchievement(unlocked[0]);
     }
     setUser(updatedUser);
-  }, [user]);
+  };
 
-  const handleDeleteRequest = useCallback((id: string) => setPlantToDelete(id), []);
+  const handleDeleteRequest = (id: string) => setPlantToDelete(id);
   
   const confirmDelete = () => {
     if (!user || !plantToDelete) return;
@@ -284,10 +278,10 @@ const App: React.FC = () => {
     setPlantToDelete(null);
   };
 
-  const handleScheduleRequest = useCallback((plant: Plant, date: Date) => {
+  const handleScheduleRequest = (plant: Plant, date: Date) => {
     setPlantToSchedule({ plant, date });
     setCalendarModalOpen(true);
-  }, []);
+  };
 
   const resetAddPlant = () => {
     setCapturedImage(null);
@@ -315,16 +309,14 @@ const App: React.FC = () => {
            <div className="flex gap-2">
              <button 
                onClick={() => setSelectedDwelling('Casa')}
-               aria-pressed={selectedDwelling === 'Casa'}
-               className={`flex-1 flex flex-col items-center p-3 rounded-lg border-2 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${selectedDwelling === 'Casa' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-100 text-slate-400 hover:border-emerald-200'}`}
+               className={`flex-1 flex flex-col items-center p-3 rounded-lg border-2 transition-all ${selectedDwelling === 'Casa' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-100 text-slate-400 hover:border-emerald-200'}`}
              >
                 <Home size={24} className="mb-1" />
                 <span className="text-sm font-bold">Casa</span>
              </button>
              <button 
                onClick={() => setSelectedDwelling('Apartamento')}
-               aria-pressed={selectedDwelling === 'Apartamento'}
-               className={`flex-1 flex flex-col items-center p-3 rounded-lg border-2 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${selectedDwelling === 'Apartamento' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-100 text-slate-400 hover:border-emerald-200'}`}
+               className={`flex-1 flex flex-col items-center p-3 rounded-lg border-2 transition-all ${selectedDwelling === 'Apartamento' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-100 text-slate-400 hover:border-emerald-200'}`}
              >
                 <Building size={24} className="mb-1" />
                 <span className="text-sm font-bold">Apto</span>
@@ -377,18 +369,21 @@ const App: React.FC = () => {
             {view === 'dashboard' && (
               <button 
                 onClick={() => refreshWeather(user?.location || null, user?.plants)} 
-                className="p-2 text-slate-500 hover:text-emerald-600 hover:bg-slate-50 rounded-full transition-all"
+                disabled={weatherLoading}
+                className={`p-2 rounded-full transition-all ${weatherLoading ? 'bg-emerald-50 text-emerald-600 cursor-not-allowed' : 'text-slate-500 hover:text-emerald-600 hover:bg-slate-50'}`}
                 title="Atualizar Clima"
+                aria-label={weatherLoading ? "Atualizando clima..." : "Atualizar clima"}
               >
-                <RefreshCw size={20} className={weatherLoading ? "animate-spin text-emerald-600" : ""} />
+                <RefreshCw size={20} className={weatherLoading ? "animate-spin" : ""} />
               </button>
             )}
             
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className={`p-2 rounded-lg transition-colors ${isMenuOpen ? 'bg-slate-100 text-slate-800' : 'text-slate-600 hover:bg-slate-50'}`}
-              aria-label="Menu"
+              aria-label={isMenuOpen ? "Fechar menu" : "Abrir menu"}
               aria-expanded={isMenuOpen}
+              aria-haspopup="true"
             >
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -401,7 +396,6 @@ const App: React.FC = () => {
             <nav className="max-w-3xl mx-auto p-2 flex flex-col gap-1">
               <button 
                 onClick={() => navigateTo('dashboard')}
-                aria-current={view === 'dashboard' ? 'page' : undefined}
                 className={`flex items-center justify-between p-4 rounded-xl text-left ${view === 'dashboard' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
               >
                 <div className="flex items-center gap-3">
@@ -413,7 +407,6 @@ const App: React.FC = () => {
 
               <button 
                 onClick={() => navigateTo('agenda')}
-                aria-current={view === 'agenda' ? 'page' : undefined}
                 className={`flex items-center justify-between p-4 rounded-xl text-left ${view === 'agenda' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
               >
                 <div className="flex items-center gap-3">
@@ -425,7 +418,6 @@ const App: React.FC = () => {
 
               <button 
                 onClick={() => navigateTo('add-plant')}
-                aria-current={view === 'add-plant' ? 'page' : undefined}
                 className={`flex items-center justify-between p-4 rounded-xl text-left ${view === 'add-plant' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
               >
                 <div className="flex items-center gap-3">
@@ -437,7 +429,6 @@ const App: React.FC = () => {
 
               <button 
                 onClick={() => navigateTo('profile')}
-                aria-current={view === 'profile' ? 'page' : undefined}
                 className={`flex items-center justify-between p-4 rounded-xl text-left ${view === 'profile' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
               >
                 <div className="flex items-center gap-3">
@@ -511,7 +502,6 @@ const App: React.FC = () => {
                   {/* Card to add new plant inline */}
                   <button 
                     onClick={() => navigateTo('add-plant')}
-                    aria-label="Adicionar nova planta"
                     className="min-h-[300px] rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-3 text-slate-400 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50/50 transition-all group"
                   >
                     <div className="w-12 h-12 rounded-full bg-slate-100 group-hover:bg-emerald-100 flex items-center justify-center transition-colors">
@@ -578,7 +568,6 @@ const App: React.FC = () => {
                          value={searchName}
                          onChange={(e) => setSearchName(e.target.value)}
                          placeholder="Ex: Jiboia"
-                         aria-label="Nome da planta para busca"
                          className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-emerald-500"
                        />
                        <Button 
