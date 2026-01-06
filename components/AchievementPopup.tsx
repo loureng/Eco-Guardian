@@ -35,7 +35,11 @@ export const AchievementPopup: React.FC<Props> = ({ achievement, onClose }) => {
         {/* Background shine effect */}
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-yellow-50 via-white to-yellow-50 opacity-50 z-0"></div>
         
-        <button onClick={onClose} className="absolute top-2 right-2 text-slate-400 hover:text-slate-600 z-10">
+        <button
+          onClick={onClose}
+          aria-label="Fechar conquista"
+          className="absolute top-2 right-2 text-slate-400 hover:text-slate-600 z-10"
+        >
           <X size={16} />
         </button>
 
