@@ -540,11 +540,12 @@ const App: React.FC = () => {
                 {/* Cards Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Option 1: Camera */}
-                  <div className="relative overflow-hidden group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer">
+                  <div className="relative overflow-hidden group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-emerald-200 focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500 transition-all cursor-pointer">
                     <input 
                       type="file" 
                       accept="image/*" 
                       capture="environment"
+                      aria-label="Tirar foto ou selecionar da galeria para identificar planta"
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                       onChange={handleImageUpload}
                     />
