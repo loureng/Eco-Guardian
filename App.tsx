@@ -259,8 +259,8 @@ const App: React.FC = () => {
   const handleWater = (id: string) => {
     if(!user) return;
     const now = Date.now();
-    const updatedPlants = user.plants.map(p => p.id === id ? { ...p, lastWatered: now, wateringHistory: [...(p.wateringHistory || []), now] } : p);
-    const updatedUser = { ...user, plants: updatedPlants };
+    const updatedPlants = currentUser.plants.map(p => p.id === id ? { ...p, lastWatered: now, wateringHistory: [...(p.wateringHistory || []), now] } : p);
+    const updatedUser = { ...currentUser, plants: updatedPlants };
     const unlocked = checkNewAchievements(updatedUser, 'WATERED');
     if (unlocked.length > 0) {
       updatedUser.unlockedAchievements = [...(updatedUser.unlockedAchievements || []), ...unlocked.map(a => a.id)];
