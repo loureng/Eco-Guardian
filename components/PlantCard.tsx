@@ -8,6 +8,26 @@ import {
 } from 'lucide-react';
 import { checkPlantHealth, calculateSmartWatering } from '../services/plantLogic';
 
+const DATE_FORMATTER = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' });
+
+const getAlertStyle = (type: string) => {
+  switch (type) {
+    case 'warning': return 'bg-amber-50 text-amber-700 border-amber-200';
+    case 'danger': return 'bg-red-50 text-red-700 border-red-200';
+    case 'success': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    default: return 'bg-blue-50 text-blue-700 border-blue-200';
+  }
+};
+
+const getAlertIcon = (type: string) => {
+  switch (type) {
+    case 'warning': return <AlertTriangle size={14} />;
+    case 'danger': return <AlertTriangle size={14} />;
+    case 'success': return <CheckCircle2 size={14} />;
+    default: return <Info size={14} />;
+  }
+};
+
 interface Props {
   plant: Plant;
   weather: WeatherData | null;
@@ -16,7 +36,7 @@ interface Props {
   onSchedule: (plant: Plant, date: Date) => void;
 }
 
-export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, onSchedule }) => {
+export const PlantCard = React.memo<Props>(({ plant, weather, onWater, onDelete, onSchedule }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
   // Real-time Logic Calculation (Daily Review)
@@ -338,4 +358,4 @@ export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, 
       `}</style>
     </div>
   );
-};
+});
