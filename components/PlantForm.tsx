@@ -303,6 +303,8 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
         <div>
           <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Nome Popular</label>
           <input 
+            type="text"
+            maxLength={50}
             className="w-full p-2 border border-slate-200 rounded-lg"
             value={formData.commonName || ''}
             onChange={e => handleChange('commonName', e.target.value)}
@@ -313,6 +315,8 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
         <div>
           <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Nome Científico</label>
           <input 
+            type="text"
+            maxLength={100}
             className="w-full p-2 border border-slate-200 rounded-lg italic"
             value={formData.scientificName || ''}
             onChange={e => handleChange('scientificName', e.target.value)}
@@ -347,6 +351,8 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
            ) : (
              <div className="flex gap-2 animate-[fadeIn_0.2s_ease-out]">
                <input 
+                 type="text"
+                 maxLength={30}
                  className="flex-1 p-2 border border-slate-200 rounded-lg"
                  placeholder="Digite a categoria (ex: Orquídea)..."
                  value={formData.category || ''}
@@ -377,6 +383,7 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
             <input 
               type="number"
               min="1"
+              max="365"
               placeholder="Ex: 7"
               className="w-full p-2 border border-slate-200 rounded-lg"
               value={formData.wateringFrequencyDays || ''}
@@ -400,11 +407,11 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
         <div className="grid grid-cols-2 gap-3">
            <div>
              <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Min Temp (°C)</label>
-             <input type="number" className="w-full p-2 border border-slate-200 rounded-lg" value={formData.minTemp || 0} onChange={e => handleChange('minTemp', parseInt(e.target.value))} />
+             <input type="number" min="-20" max="60" className="w-full p-2 border border-slate-200 rounded-lg" value={formData.minTemp || 0} onChange={e => handleChange('minTemp', parseInt(e.target.value))} />
            </div>
            <div>
              <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Máx Temp (°C)</label>
-             <input type="number" className="w-full p-2 border border-slate-200 rounded-lg" value={formData.maxTemp || 35} onChange={e => handleChange('maxTemp', parseInt(e.target.value))} />
+             <input type="number" min="-20" max="60" className="w-full p-2 border border-slate-200 rounded-lg" value={formData.maxTemp || 35} onChange={e => handleChange('maxTemp', parseInt(e.target.value))} />
            </div>
         </div>
 
@@ -412,6 +419,8 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
         <div>
           <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Dicas de Ambiente (Ventilação/Chuva)</label>
           <input 
+            type="text"
+            maxLength={200}
             className="w-full p-2 border border-slate-200 rounded-lg"
             value={formData.environmentTips || ''}
             onChange={e => handleChange('environmentTips', e.target.value)}
