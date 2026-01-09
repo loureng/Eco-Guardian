@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useId } from 'react';
 import { Plant, WeatherData } from '../types';
 import { 
   Droplets, Thermometer, Sun, AlertTriangle, Trash2, CalendarClock, 
@@ -18,6 +18,7 @@ interface Props {
 
 export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, onSchedule }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const contentId = useId();
   
   // Real-time Logic Calculation (Daily Review)
   const activeAlerts = checkPlantHealth(plant, weather);
@@ -85,6 +86,7 @@ export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, 
           }}
           className="absolute top-2 left-2 w-8 h-8 bg-black/20 hover:bg-red-500 backdrop-blur-sm rounded-full text-white flex items-center justify-center transition-colors z-10"
           title="Excluir planta"
+          aria-label={`Excluir ${plant.commonName}`}
         >
           <Trash2 size={14} />
         </button>
@@ -99,9 +101,12 @@ export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, 
       
       <div className="p-4">
         {/* Title Row - Clickable */}
-        <div 
-          className="flex justify-between items-start mb-1 cursor-pointer select-none"
+        <button
+          type="button"
+          className="w-full flex justify-between items-start mb-1 cursor-pointer select-none text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-lg"
           onClick={() => setIsExpanded(!isExpanded)}
+          aria-expanded={isExpanded}
+          aria-controls={contentId}
         >
           <div>
             <h3 className="font-bold text-slate-900 text-lg leading-tight">{plant.commonName}</h3>
@@ -110,7 +115,7 @@ export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, 
           <div className={`text-slate-400 p-1 hover:bg-slate-50 rounded-full transition-all duration-300 ${isExpanded ? 'rotate-180 bg-slate-50' : ''}`}>
             <ChevronDown size={20} />
           </div>
-        </div>
+        </button>
 
         {/* Daily Review Section (Alerts) */}
         {activeAlerts.length > 0 ? (
@@ -134,7 +139,10 @@ export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, 
 
         {/* DETAILS SECTION (EXPANDABLE) */}
         {isExpanded && (
-           <div className="mb-4 p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs animate-[fadeIn_0.3s_ease-out] overflow-hidden">
+           <div
+             id={contentId}
+             className="mb-4 p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs animate-[fadeIn_0.3s_ease-out] overflow-hidden"
+           >
               
               {/* Basic Technical Specs Grid */}
               <div className="grid grid-cols-2 gap-3 mb-3 pb-3 border-b border-slate-100">
@@ -302,6 +310,7 @@ export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, 
                  }}
                  className="ml-1 p-1 hover:bg-emerald-50 text-emerald-600 rounded-md transition-colors"
                  title="Adicionar ao Calendário"
+                 aria-label={`Adicionar ${plant.commonName} ao calendário`}
                >
                  <CalendarPlus size={14} />
                </button>
