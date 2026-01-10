@@ -259,8 +259,8 @@ const App: React.FC = () => {
   const handleWater = (id: string) => {
     if(!user) return;
     const now = Date.now();
-    const updatedPlants = currentUser.plants.map(p => p.id === id ? { ...p, lastWatered: now, wateringHistory: [...(p.wateringHistory || []), now] } : p);
-    const updatedUser = { ...currentUser, plants: updatedPlants };
+    const updatedPlants = user.plants.map(p => p.id === id ? { ...p, lastWatered: now, wateringHistory: [...(p.wateringHistory || []), now] } : p);
+    const updatedUser = { ...user, plants: updatedPlants };
     const unlocked = checkNewAchievements(updatedUser, 'WATERED');
     if (unlocked.length > 0) {
       updatedUser.unlockedAchievements = [...(updatedUser.unlockedAchievements || []), ...unlocked.map(a => a.id)];
@@ -528,9 +528,14 @@ const App: React.FC = () => {
         {view === 'add-plant' && (
           <div className="animate-[fadeIn_0.3s_ease-out]">
             <div className="mb-6 flex items-center gap-2 text-sm text-slate-500">
-               <span onClick={() => navigateTo('dashboard')} className="cursor-pointer hover:text-emerald-600">Home</span>
+               <button
+                 onClick={() => navigateTo('dashboard')}
+                 className="cursor-pointer hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 rounded px-1"
+               >
+                 Home
+               </button>
                <ChevronRight size={14} />
-               <span className="font-bold text-slate-800">Nova Planta</span>
+               <span className="font-bold text-slate-800" aria-current="page">Nova Planta</span>
             </div>
 
             <h1 className="text-2xl font-bold text-slate-800 mb-6">Cadastrar Planta</h1>
@@ -561,21 +566,23 @@ const App: React.FC = () => {
                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mb-4">
                         <Search size={24} />
                      </div>
-                     <h3 className="font-bold text-lg text-slate-800 mb-3">Buscar por Nome</h3>
+                     <h3 className="font-bold text-lg text-slate-800 mb-3" id="search-plant-label">Buscar por Nome</h3>
                      <div className="flex gap-2">
                        <input 
                          type="text" 
                          value={searchName}
                          onChange={(e) => setSearchName(e.target.value)}
                          placeholder="Ex: Jiboia"
+                         aria-labelledby="search-plant-label"
                          className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-emerald-500"
                        />
                        <Button 
                          onClick={handleNameSearch} 
                          disabled={!searchName.trim() || isAnalyzing}
                          className="w-auto px-4 py-2"
+                         aria-label={isAnalyzing ? "Pesquisando..." : "Pesquisar planta"}
                        >
-                          <Search size={18} />
+                          {isAnalyzing ? <RefreshCw size={18} className="animate-spin" /> : <Search size={18} />}
                        </Button>
                      </div>
                      <p className="text-xs text-slate-400 mt-2">Gera imagem IA e ficha técnica.</p>

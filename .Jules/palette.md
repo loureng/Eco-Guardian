@@ -1,0 +1,1 @@
+## 2024-06-20 - Fix Missing Defines in PlantCard\n**Learning:** The project had missing definitions for `DATE_FORMATTER`, `getAlertStyle`, and `getAlertIcon` in `components/PlantCard.tsx`, causing TypeScript errors.  \n**Action:** Defined these constants and helper functions within the file to resolve build issues and ensure consistent rendering.
