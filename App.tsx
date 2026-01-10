@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { UserProfile, Plant, UserLocation, WeatherData, SunTolerance, Achievement, DwellingType } from './types';
 import { loadUser, saveUser } from './services/storageService';
 import { identifyPlant, getPlantDetailsByName, generatePlantImage } from './services/geminiService';
@@ -32,6 +32,15 @@ const App: React.FC = () => {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   
+  // UseRef for stable callbacks
+  const userRef = useRef<UserProfile | null>(null);
+
+  // Update ref when user changes
+  useEffect(() => {
+    userRef.current = user;
+    if (user) saveUser(user);
+  }, [user]);
+
   // Menu State
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
@@ -74,6 +83,24 @@ const App: React.FC = () => {
     }
   };
 
+  const refreshWeather = useCallback(async (loc: UserLocation | null, plants?: Plant[]) => {
+    if (!loc) return;
+    setWeatherLoading(true);
+    try {
+      const data = await fetchLocalWeather(loc);
+      setWeather(data);
+      if (plants && plants.length > 0) {
+        const alerts = getAggregateAlerts(plants, data);
+        if (alerts.length > 0) processAlertsForNotifications(alerts);
+      }
+    } catch (e) {
+      console.error(e);
+      triggerError("Não foi possível atualizar o clima. Verifique sua conexão.");
+    } finally {
+      setWeatherLoading(false);
+    }
+  }, []);
+
   // Initialize App
   useEffect(() => {
     const storedUser = loadUser();
@@ -91,30 +118,7 @@ const App: React.FC = () => {
       refreshWeather(storedUser.location, storedUser.plants);
       requestNotificationPermission(); 
     }
-  }, []);
-
-  // Save user changes
-  useEffect(() => {
-    if (user) saveUser(user);
-  }, [user]);
-
-  const refreshWeather = async (loc: UserLocation | null, plants?: Plant[]) => {
-    if (!loc) return;
-    setWeatherLoading(true);
-    try {
-      const data = await fetchLocalWeather(loc);
-      setWeather(data);
-      if (plants && plants.length > 0) {
-        const alerts = getAggregateAlerts(plants, data);
-        if (alerts.length > 0) processAlertsForNotifications(alerts);
-      }
-    } catch (e) {
-      console.error(e);
-      triggerError("Não foi possível atualizar o clima. Verifique sua conexão.");
-    } finally {
-      setWeatherLoading(false);
-    }
-  };
+  }, [refreshWeather]);
 
   // Navigation Helper
   const navigateTo = (target: 'welcome' | 'dashboard' | 'agenda' | 'add-plant' | 'profile') => {
@@ -256,8 +260,10 @@ const App: React.FC = () => {
     refreshWeather(user.location, updatedPlants);
   };
 
-  const handleWater = (id: string) => {
-    if(!user) return;
+  // Optimization: use callback with ref to prevent unnecessary re-renders of PlantCard
+  const handleWater = useCallback((id: string) => {
+    const currentUser = userRef.current;
+    if(!currentUser) return;
     const now = Date.now();
     const updatedPlants = currentUser.plants.map(p => p.id === id ? { ...p, lastWatered: now, wateringHistory: [...(p.wateringHistory || []), now] } : p);
     const updatedUser = { ...currentUser, plants: updatedPlants };
@@ -267,9 +273,9 @@ const App: React.FC = () => {
       setNewAchievement(unlocked[0]);
     }
     setUser(updatedUser);
-  };
+  }, []);
 
-  const handleDeleteRequest = (id: string) => setPlantToDelete(id);
+  const handleDeleteRequest = useCallback((id: string) => setPlantToDelete(id), []);
   
   const confirmDelete = () => {
     if (!user || !plantToDelete) return;
@@ -278,10 +284,10 @@ const App: React.FC = () => {
     setPlantToDelete(null);
   };
 
-  const handleScheduleRequest = (plant: Plant, date: Date) => {
+  const handleScheduleRequest = useCallback((plant: Plant, date: Date) => {
     setPlantToSchedule({ plant, date });
     setCalendarModalOpen(true);
-  };
+  }, []);
 
   const resetAddPlant = () => {
     setCapturedImage(null);
