@@ -52,6 +52,21 @@ const sanitizeArray = (val: any): string[] => {
   return [];
 };
 
+/**
+ * Sanitizes user input for Prompt Injection mitigation.
+ * Limits length and removes characters that could be used for structural attacks or token exhaustion.
+ */
+const sanitizeInputForPrompt = (input: string, maxLength: number = 100): string => {
+  if (!input) return "";
+  // Normalize whitespace (remove newlines/tabs) and trim
+  let sanitized = input.replace(/[\r\n\t]/g, " ").trim();
+  // Limit length
+  if (sanitized.length > maxLength) {
+    sanitized = sanitized.substring(0, maxLength);
+  }
+  return sanitized;
+};
+
 export const identifyPlant = async (base64Image: string): Promise<Partial<Plant>> => {
   try {
     const ai = getGeminiClient();
@@ -101,7 +116,8 @@ export const identifyPlant = async (base64Image: string): Promise<Partial<Plant>
 export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant>> => {
   try {
     const ai = getGeminiClient();
-    const prompt = PLANT_DETAILS_PROMPT.replace("{{NAME}}", name);
+    const cleanName = sanitizeInputForPrompt(name);
+    const prompt = PLANT_DETAILS_PROMPT.replace("{{NAME}}", cleanName);
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-lite",
@@ -144,9 +160,10 @@ export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant
 export const generatePlantImage = async (plantName: string): Promise<string | null> => {
   try {
     const ai = getGeminiClient();
+    const cleanName = sanitizeInputForPrompt(plantName);
     
     // Prompt aprimorado para estética, profundidade e precisão botânica
-    const prompt = `A professional, high-end botanical portrait of the plant species: ${plantName}. 
+    const prompt = `A professional, high-end botanical portrait of the plant species: "${cleanName}".
     STYLE: Photorealistic macro photography with shallow depth of field.
     SUBJECT: Focus strictly on the vibrant green leaves, stems, and natural textures of the plant. 
     CONSTRAINT: This is a botanical houseplant. DO NOT include any animals, snakes, or non-botanical objects.
@@ -186,9 +203,12 @@ export const sendChatMessage = async (
     let systemInstruction = "Você é o EcoGuardian, um especialista amigável em plantas. Responda em Português do Brasil.";
     
     if (userProfile) {
-      const plantNames = userProfile.plants.map(p => p.commonName).join(", ");
-      systemInstruction += `\nO usuário vive em: ${userProfile.dwellingType || 'Casa/Apartamento'}.`;
-      systemInstruction += `\nLocalização: ${userProfile.location?.city || 'Desconhecida'}.`;
+      const plantNames = userProfile.plants.map(p => sanitizeInputForPrompt(p.commonName, 50)).join(", ");
+      const dwelling = sanitizeInputForPrompt(userProfile.dwellingType || 'Casa/Apartamento', 30);
+      const city = sanitizeInputForPrompt(userProfile.location?.city || 'Desconhecida', 50);
+
+      systemInstruction += `\nO usuário vive em: ${dwelling}.`;
+      systemInstruction += `\nLocalização: ${city}.`;
       if (plantNames) {
         systemInstruction += `\nPlantas do usuário: ${plantNames}.`;
       }
