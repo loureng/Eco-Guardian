@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { UserProfile, Plant, UserLocation, WeatherData, SunTolerance, Achievement, DwellingType } from './types';
 import { loadUser, saveUser } from './services/storageService';
 import { identifyPlant, getPlantDetailsByName, generatePlantImage } from './services/geminiService';
@@ -209,7 +209,7 @@ const App: React.FC = () => {
     handleManualFallback();
   };
 
-  const handleSavePlant = (data: Partial<Plant>) => {
+  const handleSavePlant = useCallback((data: Partial<Plant>) => {
     if (!user) return;
     if (!data.commonName || data.commonName.trim() === "") { triggerError("Nome obrigatório."); return; }
     
@@ -254,34 +254,34 @@ const App: React.FC = () => {
     setSearchName("");
     setView('dashboard');
     refreshWeather(user.location, updatedPlants);
-  };
+  }, [user, capturedImage]);
 
-  const handleWater = (id: string) => {
+  const handleWater = useCallback((id: string) => {
     if(!user) return;
     const now = Date.now();
-    const updatedPlants = currentUser.plants.map(p => p.id === id ? { ...p, lastWatered: now, wateringHistory: [...(p.wateringHistory || []), now] } : p);
-    const updatedUser = { ...currentUser, plants: updatedPlants };
+    const updatedPlants = user.plants.map(p => p.id === id ? { ...p, lastWatered: now, wateringHistory: [...(p.wateringHistory || []), now] } : p);
+    const updatedUser = { ...user, plants: updatedPlants };
     const unlocked = checkNewAchievements(updatedUser, 'WATERED');
     if (unlocked.length > 0) {
       updatedUser.unlockedAchievements = [...(updatedUser.unlockedAchievements || []), ...unlocked.map(a => a.id)];
       setNewAchievement(unlocked[0]);
     }
     setUser(updatedUser);
-  };
+  }, [user]);
 
-  const handleDeleteRequest = (id: string) => setPlantToDelete(id);
+  const handleDeleteRequest = useCallback((id: string) => setPlantToDelete(id), []);
   
-  const confirmDelete = () => {
+  const confirmDelete = useCallback(() => {
     if (!user || !plantToDelete) return;
     const updatedPlants = user.plants.filter(p => p.id !== plantToDelete);
     setUser({ ...user, plants: updatedPlants });
     setPlantToDelete(null);
-  };
+  }, [user, plantToDelete]);
 
-  const handleScheduleRequest = (plant: Plant, date: Date) => {
+  const handleScheduleRequest = useCallback((plant: Plant, date: Date) => {
     setPlantToSchedule({ plant, date });
     setCalendarModalOpen(true);
-  };
+  }, []);
 
   const resetAddPlant = () => {
     setCapturedImage(null);
