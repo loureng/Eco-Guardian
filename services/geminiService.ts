@@ -1,6 +1,7 @@
 import { GoogleGenAI, Type, Schema, Content } from "@google/genai";
 import { Plant, SunTolerance, ChatMessage, UserProfile } from "../types";
 import { PLANT_IDENTIFICATION_PROMPT, PLANT_DETAILS_PROMPT } from "../constants";
+import { sanitizeForPrompt } from "./security";
 
 const getGeminiClient = () => {
   const apiKey = process.env.API_KEY;
@@ -101,7 +102,7 @@ export const identifyPlant = async (base64Image: string): Promise<Partial<Plant>
 export const getPlantDetailsByName = async (name: string): Promise<Partial<Plant>> => {
   try {
     const ai = getGeminiClient();
-    const prompt = PLANT_DETAILS_PROMPT.replace("{{NAME}}", name);
+    const prompt = PLANT_DETAILS_PROMPT.replace("{{NAME}}", sanitizeForPrompt(name));
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-lite",
