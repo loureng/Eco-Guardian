@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { UserProfile, Plant, UserLocation, WeatherData, SunTolerance, Achievement, DwellingType } from './types';
 import { loadUser, saveUser } from './services/storageService';
 import { identifyPlant, getPlantDetailsByName, generatePlantImage } from './services/geminiService';
@@ -98,7 +98,7 @@ const App: React.FC = () => {
     if (user) saveUser(user);
   }, [user]);
 
-  const refreshWeather = async (loc: UserLocation | null, plants?: Plant[]) => {
+  const refreshWeather = useCallback(async (loc: UserLocation | null, plants?: Plant[]) => {
     if (!loc) return;
     setWeatherLoading(true);
     try {
@@ -114,15 +114,22 @@ const App: React.FC = () => {
     } finally {
       setWeatherLoading(false);
     }
-  };
+  }, []);
+
+  const resetAddPlant = useCallback(() => {
+    setCapturedImage(null);
+    setPlantFormData(null);
+    setIsManualEntry(false);
+    setSearchName("");
+  }, []);
 
   // Navigation Helper
-  const navigateTo = (target: 'welcome' | 'dashboard' | 'agenda' | 'add-plant' | 'profile') => {
+  const navigateTo = useCallback((target: 'welcome' | 'dashboard' | 'agenda' | 'add-plant' | 'profile') => {
     setView(target);
     setIsMenuOpen(false);
     if (target === 'add-plant') resetAddPlant();
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, [resetAddPlant]);
 
   // --- Logic Functions (Login, Image, etc) ---
   
@@ -256,39 +263,32 @@ const App: React.FC = () => {
     refreshWeather(user.location, updatedPlants);
   };
 
-  const handleWater = (id: string) => {
+  const handleWater = useCallback((id: string) => {
     if(!user) return;
     const now = Date.now();
-    const updatedPlants = currentUser.plants.map(p => p.id === id ? { ...p, lastWatered: now, wateringHistory: [...(p.wateringHistory || []), now] } : p);
-    const updatedUser = { ...currentUser, plants: updatedPlants };
+    const updatedPlants = user.plants.map(p => p.id === id ? { ...p, lastWatered: now, wateringHistory: [...(p.wateringHistory || []), now] } : p);
+    const updatedUser = { ...user, plants: updatedPlants };
     const unlocked = checkNewAchievements(updatedUser, 'WATERED');
     if (unlocked.length > 0) {
       updatedUser.unlockedAchievements = [...(updatedUser.unlockedAchievements || []), ...unlocked.map(a => a.id)];
       setNewAchievement(unlocked[0]);
     }
     setUser(updatedUser);
-  };
+  }, [user]);
 
-  const handleDeleteRequest = (id: string) => setPlantToDelete(id);
+  const handleDeleteRequest = useCallback((id: string) => setPlantToDelete(id), []);
   
-  const confirmDelete = () => {
+  const confirmDelete = useCallback(() => {
     if (!user || !plantToDelete) return;
     const updatedPlants = user.plants.filter(p => p.id !== plantToDelete);
     setUser({ ...user, plants: updatedPlants });
     setPlantToDelete(null);
-  };
+  }, [user, plantToDelete]);
 
-  const handleScheduleRequest = (plant: Plant, date: Date) => {
+  const handleScheduleRequest = useCallback((plant: Plant, date: Date) => {
     setPlantToSchedule({ plant, date });
     setCalendarModalOpen(true);
-  };
-
-  const resetAddPlant = () => {
-    setCapturedImage(null);
-    setPlantFormData(null);
-    setIsManualEntry(false);
-    setSearchName("");
-  };
+  }, []);
 
   // --- Render ---
 
