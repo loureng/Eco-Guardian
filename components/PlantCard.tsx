@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useId } from 'react';
 import { Plant, WeatherData } from '../types';
 import { 
   Droplets, Thermometer, Sun, AlertTriangle, Trash2, CalendarClock, 
@@ -7,6 +7,26 @@ import {
   Wind, Sprout, Layers
 } from 'lucide-react';
 import { checkPlantHealth, calculateSmartWatering } from '../services/plantLogic';
+
+const DATE_FORMATTER = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' });
+
+const getAlertStyle = (type: 'warning' | 'info' | 'danger' | 'success') => {
+  switch (type) {
+    case 'warning': return 'bg-amber-50 text-amber-700 border-amber-100';
+    case 'danger': return 'bg-red-50 text-red-700 border-red-100';
+    case 'success': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+    default: return 'bg-blue-50 text-blue-700 border-blue-100';
+  }
+};
+
+const getAlertIcon = (type: 'warning' | 'info' | 'danger' | 'success') => {
+  switch (type) {
+    case 'warning': return <AlertTriangle size={14} />;
+    case 'danger': return <AlertTriangle size={14} />;
+    case 'success': return <CheckCircle2 size={14} />;
+    default: return <Info size={14} />;
+  }
+};
 
 interface Props {
   plant: Plant;
@@ -18,6 +38,7 @@ interface Props {
 
 export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, onSchedule }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const detailsId = useId();
   
   // Real-time Logic Calculation (Daily Review)
   const activeAlerts = checkPlantHealth(plant, weather);
@@ -70,27 +91,33 @@ export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, 
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-md transition-shadow group relative">
       {/* Header Image Area - Clickable */}
-      <div className="relative h-40 bg-slate-100 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
-        <img 
-          src={plant.imageUrl || "https://picsum.photos/400/300"} 
-          alt={plant.commonName} 
-          className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
-        />
+      <div className="relative h-40 bg-slate-100 group-header">
+        <button
+          className="absolute inset-0 w-full h-full p-0 border-0 focus:outline-none focus:ring-2 focus:ring-emerald-500 z-0 text-left"
+          onClick={() => setIsExpanded(!isExpanded)}
+          aria-expanded={isExpanded}
+          aria-controls={detailsId}
+          aria-label={`${isExpanded ? 'Recolher' : 'Expandir'} detalhes de ${plant.commonName}`}
+        >
+          <img
+            src={plant.imageUrl || "https://picsum.photos/400/300"}
+            alt=""
+            className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+          />
+        </button>
         
         {/* Delete Button */}
         <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(plant.id);
-          }}
+          onClick={() => onDelete(plant.id)}
           className="absolute top-2 left-2 w-8 h-8 bg-black/20 hover:bg-red-500 backdrop-blur-sm rounded-full text-white flex items-center justify-center transition-colors z-10"
           title="Excluir planta"
+          aria-label={`Excluir ${plant.commonName}`}
         >
           <Trash2 size={14} />
         </button>
 
         {/* Badge de Próxima Ação */}
-        <div className={`absolute bottom-2 right-2 px-3 py-1 rounded-full text-xs font-bold shadow-sm flex items-center gap-1 backdrop-blur-md
+        <div className={`absolute bottom-2 right-2 px-3 py-1 rounded-full text-xs font-bold shadow-sm flex items-center gap-1 backdrop-blur-md pointer-events-none z-10
           ${isUrgent ? 'bg-white/90 text-emerald-700' : 'bg-black/40 text-white'}`}>
           <CalendarClock size={12} />
           {isToday ? 'Regar Hoje' : schedule.daysRemaining < 0 ? 'Atrasada' : `${schedule.daysRemaining} dias`}
@@ -99,9 +126,11 @@ export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, 
       
       <div className="p-4">
         {/* Title Row - Clickable */}
-        <div 
-          className="flex justify-between items-start mb-1 cursor-pointer select-none"
+        <button
+          className="w-full text-left flex justify-between items-start mb-1 cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-emerald-500 rounded-lg p-1 -ml-1"
           onClick={() => setIsExpanded(!isExpanded)}
+          aria-expanded={isExpanded}
+          aria-controls={detailsId}
         >
           <div>
             <h3 className="font-bold text-slate-900 text-lg leading-tight">{plant.commonName}</h3>
@@ -110,7 +139,7 @@ export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, 
           <div className={`text-slate-400 p-1 hover:bg-slate-50 rounded-full transition-all duration-300 ${isExpanded ? 'rotate-180 bg-slate-50' : ''}`}>
             <ChevronDown size={20} />
           </div>
-        </div>
+        </button>
 
         {/* Daily Review Section (Alerts) */}
         {activeAlerts.length > 0 ? (
@@ -134,7 +163,10 @@ export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, 
 
         {/* DETAILS SECTION (EXPANDABLE) */}
         {isExpanded && (
-           <div className="mb-4 p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs animate-[fadeIn_0.3s_ease-out] overflow-hidden">
+           <div
+             id={detailsId}
+             className="mb-4 p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs animate-[fadeIn_0.3s_ease-out] overflow-hidden"
+           >
               
               {/* Basic Technical Specs Grid */}
               <div className="grid grid-cols-2 gap-3 mb-3 pb-3 border-b border-slate-100">
@@ -302,6 +334,7 @@ export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, 
                  }}
                  className="ml-1 p-1 hover:bg-emerald-50 text-emerald-600 rounded-md transition-colors"
                  title="Adicionar ao Calendário"
+                 aria-label={`Adicionar rega de ${plant.commonName} ao calendário`}
                >
                  <CalendarPlus size={14} />
                </button>
