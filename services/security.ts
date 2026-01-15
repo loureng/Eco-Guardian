@@ -8,8 +8,8 @@ export const isSafeUrl = (url: string): boolean => {
   }
 };
 
-export const sanitizeForPrompt = (input: string): string => {
+export const sanitizeForPrompt = (input: string, maxLength: number = 100): string => {
   // Removes control characters and limits length to prevent DoS/Injection abuse
   if (!input) return "";
-  return input.replace(/[\x00-\x1F\x7F]/g, "").slice(0, 100);
+  return input.replace(/[\x00-\x1F\x7F]/g, "").slice(0, maxLength);
 };
