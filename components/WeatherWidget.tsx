@@ -8,7 +8,7 @@ interface Props {
   isLoading: boolean;
 }
 
-export const WeatherWidget: React.FC<Props> = ({ weather, isLoading }) => {
+export const WeatherWidget: React.FC<Props> = React.memo(({ weather, isLoading }) => {
   if (isLoading) {
     return (
       <div className="w-full h-56 bg-white rounded-3xl p-6 shadow-sm border border-slate-100 animate-pulse flex flex-col justify-between">
@@ -114,4 +114,4 @@ export const WeatherWidget: React.FC<Props> = ({ weather, isLoading }) => {
       </div>
     </div>
   );
-};
+});

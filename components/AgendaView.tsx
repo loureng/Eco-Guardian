@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { Plant, WeatherData } from '../types';
 import { calculateSmartWatering } from '../services/plantLogic';
-import { Calendar, Droplets, ArrowRight, CalendarPlus, Clock } from 'lucide-react';
+import { Calendar, Droplets, ArrowRight, CalendarPlus, Clock, CheckCircle2 } from 'lucide-react';
 
 interface Props {
   plants: Plant[];
@@ -11,7 +11,7 @@ interface Props {
   onSchedule: (plant: Plant, date: Date) => void;
 }
 
-export const AgendaView: React.FC<Props> = ({ plants, weather, onWater, onSchedule }) => {
+export const AgendaView: React.FC<Props> = React.memo(({ plants, weather, onWater, onSchedule }) => {
   
   const scheduleData = useMemo(() => {
     const today = new Date();
@@ -149,5 +149,4 @@ export const AgendaView: React.FC<Props> = ({ plants, weather, onWater, onSchedu
       )}
     </div>
   );
-};
-import { CheckCircle2 } from 'lucide-react';
+});
