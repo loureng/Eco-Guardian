@@ -31,6 +31,7 @@ const App: React.FC = () => {
   const [view, setView] = useState<'welcome' | 'dashboard' | 'agenda' | 'add-plant' | 'profile'>('welcome');
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
   
   // Menu State
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -127,8 +128,10 @@ const App: React.FC = () => {
   // --- Logic Functions (Login, Image, etc) ---
   
   const handleLogin = () => {
+    setLoginLoading(true);
     if (!navigator.geolocation) {
       triggerError("Seu navegador não suporta ou bloqueou a geolocalização.");
+      setLoginLoading(false);
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -145,8 +148,13 @@ const App: React.FC = () => {
         setView('dashboard');
         refreshWeather(newUser.location, []);
         requestNotificationPermission();
+        setLoginLoading(false);
       },
-      (error) => { console.error(error); triggerError("Erro ao obter localização. Habilite o GPS."); },
+      (error) => {
+        console.error(error);
+        triggerError("Erro ao obter localização. Habilite o GPS.");
+        setLoginLoading(false);
+      },
       { timeout: 10000 }
     );
   };
@@ -325,7 +333,7 @@ const App: React.FC = () => {
         </div>
 
         <div className="w-full max-w-xs mx-auto">
-          <Button onClick={handleLogin}>
+          <Button onClick={handleLogin} isLoading={loginLoading}>
             Entrar com Google e Localização
           </Button>
         </div>
