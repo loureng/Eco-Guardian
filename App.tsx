@@ -259,8 +259,8 @@ const App: React.FC = () => {
   const handleWater = (id: string) => {
     if(!user) return;
     const now = Date.now();
-    const updatedPlants = currentUser.plants.map(p => p.id === id ? { ...p, lastWatered: now, wateringHistory: [...(p.wateringHistory || []), now] } : p);
-    const updatedUser = { ...currentUser, plants: updatedPlants };
+    const updatedPlants = user.plants.map(p => p.id === id ? { ...p, lastWatered: now, wateringHistory: [...(p.wateringHistory || []), now] } : p);
+    const updatedUser = { ...user, plants: updatedPlants };
     const unlocked = checkNewAchievements(updatedUser, 'WATERED');
     if (unlocked.length > 0) {
       updatedUser.unlockedAchievements = [...(updatedUser.unlockedAchievements || []), ...unlocked.map(a => a.id)];
@@ -568,6 +568,7 @@ const App: React.FC = () => {
                          value={searchName}
                          onChange={(e) => setSearchName(e.target.value)}
                          placeholder="Ex: Jiboia"
+                         maxLength={100}
                          className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-emerald-500"
                        />
                        <Button 

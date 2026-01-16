@@ -255,6 +255,7 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !isSearching && handleSearch()}
               disabled={isSearching || isAnalyzingImage}
+              maxLength={100}
             />
             <button 
               onClick={handleSearch}
@@ -307,6 +308,7 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
             value={formData.commonName || ''}
             onChange={e => handleChange('commonName', e.target.value)}
             placeholder="ex: Espada de São Jorge"
+            maxLength={100}
           />
         </div>
         
@@ -317,6 +319,7 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
             value={formData.scientificName || ''}
             onChange={e => handleChange('scientificName', e.target.value)}
             placeholder="ex: Sansevieria trifasciata"
+            maxLength={100}
           />
         </div>
 
@@ -352,6 +355,7 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
                  value={formData.category || ''}
                  onChange={(e) => handleChange('category', e.target.value)}
                  autoFocus
+                 maxLength={50}
                />
                <button 
                  onClick={() => {
@@ -416,6 +420,7 @@ export const PlantForm: React.FC<Props> = ({ initialData, imageUrl, onSave, onCa
             value={formData.environmentTips || ''}
             onChange={e => handleChange('environmentTips', e.target.value)}
             placeholder="Ex: Local arejado, evitar chuva direta..."
+            maxLength={200}
           />
         </div>
       </div>
