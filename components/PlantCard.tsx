@@ -16,7 +16,26 @@ interface Props {
   onSchedule: (plant: Plant, date: Date) => void;
 }
 
-export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, onSchedule }) => {
+// Helper functions defined outside component to avoid recreation
+const DATE_FORMATTER = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' });
+
+const getAlertStyle = (type: string) => {
+  switch (type) {
+    case 'danger': return 'bg-red-50 text-red-700 border-red-200';
+    case 'warning': return 'bg-amber-50 text-amber-700 border-amber-200';
+    default: return 'bg-blue-50 text-blue-700 border-blue-200';
+  }
+};
+
+const getAlertIcon = (type: string) => {
+  switch (type) {
+    case 'danger': return <AlertTriangle size={14} />;
+    case 'warning': return <AlertTriangle size={14} />;
+    default: return <Info size={14} />;
+  }
+};
+
+export const PlantCard: React.FC<Props> = React.memo(({ plant, weather, onWater, onDelete, onSchedule }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
   // Real-time Logic Calculation (Daily Review)
@@ -338,4 +357,4 @@ export const PlantCard: React.FC<Props> = ({ plant, weather, onWater, onDelete, 
       `}</style>
     </div>
   );
-};
+});
