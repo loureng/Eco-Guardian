@@ -147,7 +147,7 @@ export const generatePlantImage = async (plantName: string): Promise<string | nu
     const ai = getGeminiClient();
     
     // Prompt aprimorado para estética, profundidade e precisão botânica
-    const prompt = `A professional, high-end botanical portrait of the plant species: ${plantName}. 
+    const prompt = `A professional, high-end botanical portrait of the plant species: ${sanitizeForPrompt(plantName)}.
     STYLE: Photorealistic macro photography with shallow depth of field.
     SUBJECT: Focus strictly on the vibrant green leaves, stems, and natural textures of the plant. 
     CONSTRAINT: This is a botanical houseplant. DO NOT include any animals, snakes, or non-botanical objects.

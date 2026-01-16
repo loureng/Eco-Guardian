@@ -8,6 +8,24 @@ import {
 } from 'lucide-react';
 import { checkPlantHealth, calculateSmartWatering } from '../services/plantLogic';
 
+const DATE_FORMATTER = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' });
+
+const getAlertStyle = (type: string) => {
+  switch (type) {
+    case 'danger': return 'bg-red-50 border-red-100 text-red-700';
+    case 'warning': return 'bg-amber-50 border-amber-100 text-amber-700';
+    default: return 'bg-blue-50 border-blue-100 text-blue-700';
+  }
+};
+
+const getAlertIcon = (type: string) => {
+  switch (type) {
+    case 'danger': return <AlertTriangle size={14} className="text-red-500" />;
+    case 'warning': return <AlertTriangle size={14} className="text-amber-500" />;
+    default: return <Info size={14} className="text-blue-500" />;
+  }
+};
+
 interface Props {
   plant: Plant;
   weather: WeatherData | null;
